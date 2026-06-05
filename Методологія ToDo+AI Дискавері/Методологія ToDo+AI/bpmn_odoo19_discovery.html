@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8"/>
+<title>BPMN 2.0 — Дискавері + MVP · Odoo 19</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f0f2f5; font-family: system-ui,-apple-system,sans-serif; font-size: 13px; color: #212529; }
+  header { background: #fff; border-bottom: 1px solid #dee2e6; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 14px; font-weight: 600; }
+  header .sub { font-size: 11px; color: #868e96; margin-top: 1px; }
+  .zc { display: flex; gap: 6px; align-items: center; }
+  .zc button { font-size: 12px; padding: 3px 10px; border: 1px solid #ced4da; border-radius: 4px; background: #fff; cursor: pointer; }
+  .zc button:hover { background: #f1f3f5; }
+  .zc span { font-size: 11px; color: #868e96; min-width: 36px; text-align: center; }
+  .wrap { overflow: auto; height: calc(100vh - 88px); padding: 20px; background: #e9ecef; }
+  .nt { cursor: pointer; }
+  .nt:hover { opacity: .85; }
+  .nt.sel rect    { stroke: #4263eb !important; stroke-width: 2.5 !important; }
+  .nt.sel polygon { stroke: #4263eb !important; stroke-width: 2.5 !important; }
+  #panel { position: fixed; bottom: 18px; right: 18px; width: 268px; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 13px 15px; box-shadow: 0 4px 20px rgba(0,0,0,.12); display: none; }
+  #panel.on { display: block; }
+  #pt { font-weight: 600; font-size: 13px; margin-bottom: 6px; color: #212529; }
+  #pb { font-size: 11px; color: #495057; line-height: 1.65; }
+  #px { float: right; cursor: pointer; color: #adb5bd; font-size: 16px; margin-top: -2px; }
+  .tabs { display: flex; gap: 5px; }
+  .tabs button { font-size: 12px; padding: 4px 12px; border: 1px solid #ced4da; border-radius: 6px; background: #fff; cursor: pointer; color: #495057; }
+  .tabs button:hover { background: #f1f3f5; }
+  .tabs button.act { background: #4263eb; color: #fff; border-color: #4263eb; font-weight: 600; }
+  .view { display: none; }
+  .view.on { display: block; }
+  #pb { white-space: pre-line; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Дискавері + MVP · Odoo 19</h1>
+    <div class="sub" id="sub">BPMN 2.0 · повний процес · Клієнт · БА · Claude</div>
+  </div>
+  <div class="tabs">
+    <button id="tab1" class="act" onclick="showView(1)">Загальний процес</button>
+    <button id="tab2" onclick="showView(2)">ІНІЦІАЦІЯ · детально</button>
+  </div>
+  <div class="zc">
+    <button onclick="zm(1.15)">＋</button>
+    <span id="zl">100%</span>
+    <button onclick="zm(0.87)">－</button>
+    <button onclick="zr()" style="margin-left:4px">↺</button>
+  </div>
+</header>
+<div id="view1" class="view on"><div class="wrap" id="wrap">
+<!-- viewBox 3920×840 | Клієнт y=10–225 cy=117 | БА y=225–480 cy=352 | Claude y=480–830 cy=655 -->
+<svg id="svg" viewBox="0 0 3920 840" xmlns="http://www.w3.org/2000/svg"
+     font-family="system-ui,sans-serif" font-size="11"
+     style="width:3920px;height:840px;display:block;background:#fff;border-radius:6px;">
+
+<defs>
+  <marker id="a"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#868e96"/></marker>
+  <marker id="ab" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4263eb"/></marker>
+  <marker id="ag" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#2f9e44"/></marker>
+  <marker id="ar" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#e03131"/></marker>
+  <marker id="ao" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f59f00"/></marker>
+  <marker id="ap" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#7048e8"/></marker>
+</defs>
+
+<!-- POOL -->
+<rect x="10" y="10" width="3900" height="820" fill="none" stroke="#adb5bd" stroke-width="2" rx="6"/>
+<rect x="10" y="10" width="34" height="820" fill="#4263eb" rx="6 0 0 6"/>
+<text x="27" y="425" fill="white" font-size="13" font-weight="600" text-anchor="middle" transform="rotate(-90,27,425)">Дискавері + MVP · Odoo 19</text>
+
+<!-- LANES -->
+<rect x="44" y="10"  width="3866" height="215" fill="#fff"    stroke="#dee2e6" stroke-width="1"/>
+<rect x="44" y="10"  width="36"   height="215" fill="#f1f3f5"/>
+<text x="62" y="123" fill="#495057" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(-90,62,123)">Клієнт</text>
+
+<rect x="44" y="225" width="3866" height="255" fill="#fff"    stroke="#dee2e6" stroke-width="1"/>
+<rect x="44" y="225" width="36"   height="255" fill="#f1f3f5"/>
+<text x="62" y="355" fill="#495057" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(-90,62,355)">БА / Консультант</text>
+
+<rect x="44" y="480" width="3866" height="350" fill="#f8f9ff" stroke="#dee2e6" stroke-width="1"/>
+<rect x="44" y="480" width="36"   height="350" fill="#dce4ff"/>
+<text x="62" y="660" fill="#3451b2" font-size="12" font-weight="600" text-anchor="middle" transform="rotate(-90,62,660)">Claude (AI)</text>
+
+<!-- PHASE SEPARATORS -->
+<line x1="978"  y1="10" x2="978"  y2="830" stroke="#ced4da" stroke-width="1.2" stroke-dasharray="5,4"/>
+<line x1="1700" y1="10" x2="1700" y2="830" stroke="#ced4da" stroke-width="1.2" stroke-dasharray="5,4"/>
+<line x1="2610" y1="10" x2="2610" y2="830" stroke="#7048e8" stroke-width="1.5" stroke-dasharray="6,4" opacity=".6"/>
+
+<!-- PHASE BADGES -->
+<rect x="82"   y="13" width="104" height="19" rx="4" fill="#e9ecef"/>
+<text x="134"  y="25.5" fill="#495057" font-size="10" font-weight="700" text-anchor="middle">ІНІЦІАЦІЯ</text>
+
+<rect x="1300" y="13" width="118" height="19" rx="4" fill="rgba(245,183,60,.25)"/>
+<text x="1359" y="25.5" fill="#b45309" font-size="10" font-weight="700" text-anchor="middle">ЦИКЛ ЗУСТРІЧЕЙ</text>
+
+<rect x="1716" y="13" width="172" height="19" rx="4" fill="rgba(47,158,68,.12)"/>
+<text x="1802" y="25.5" fill="#2b6e36" font-size="10" font-weight="700" text-anchor="middle">ЗАВЕРШЕННЯ ДИСКАВЕРІ</text>
+
+<rect x="2620" y="13" width="88"  height="19" rx="4" fill="rgba(112,72,232,.12)"/>
+<text x="2664" y="25.5" fill="#5f3dc4" font-size="10" font-weight="700" text-anchor="middle">MVP ФАЗА</text>
+
+<!-- LOOP BOX -->
+<rect x="982" y="36" width="710" height="786" rx="8"
+      fill="rgba(255,251,230,.55)" stroke="#f59f00" stroke-width="1.5" stroke-dasharray="8,5"/>
+
+<!-- MVP BOX -->
+<rect x="2614" y="36" width="1280" height="786" rx="8"
+      fill="rgba(243,240,255,.5)" stroke="#7048e8" stroke-width="1.5" stroke-dasharray="8,5"/>
+
+<!-- ═══ START EVENT (Message) ═══ -->
+<circle cx="112" cy="117" r="20" fill="white" stroke="#2f9e44" stroke-width="2.5"/>
+<rect x="101" y="109" width="22" height="15" rx="1" fill="none" stroke="#2f9e44" stroke-width="1.2"/>
+<polyline points="101,109 112,119 123,109" fill="none" stroke="#2f9e44" stroke-width="1.2"/>
+<text x="138" y="113" fill="#495057" font-size="10">Контракт</text>
+<text x="138" y="125" fill="#495057" font-size="10">підписано</text>
+
+<!-- ═══ INIT TASKS ═══ -->
+<g class="nt" data-id="t-internal" onclick="sel(this)">
+  <rect x="140" y="326" width="140" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="210" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Внутрішня</text>
+  <text x="210" y="360" text-anchor="middle" fill="#212529" font-size="10.5">зустріч</text>
+  <text x="210" y="373" text-anchor="middle" fill="#868e96" font-size="9">БА + менеджер продажів</text>
+</g>
+
+<g class="nt" data-id="t-research" onclick="sel(this)">
+  <rect x="308" y="629" width="155" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="385" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Аналіз інформації</text>
+  <text x="385" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">+ дослідження клієнта</text>
+</g>
+
+<g class="nt" data-id="t-prepkof" onclick="sel(this)">
+  <rect x="490" y="629" width="140" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="560" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Підготовка</text>
+  <text x="560" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">до Установчої Зустрічі</text>
+</g>
+
+<g class="nt" data-id="t-kickoff" onclick="sel(this)">
+  <rect x="658" y="94" width="144" height="46" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <rect x="668" y="103" width="8" height="11" rx="4" fill="none" stroke="#868e96" stroke-width="1.1"/>
+  <path d="M664,115 Q664,123 672,123 Q680,123 680,115" fill="none" stroke="#868e96" stroke-width="1.1"/>
+  <line x1="672" y1="123" x2="672" y2="127" stroke="#868e96" stroke-width="1.1"/>
+  <text x="735" y="113" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Установча Зустріч</text>
+  <text x="735" y="127" text-anchor="middle" fill="#212529" font-size="10.5">з записом</text>
+</g>
+
+<g class="nt" data-id="t-analkof" onclick="sel(this)">
+  <rect x="658" y="629" width="144" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="730" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="9.6">Аналіз Установчої Зустрічі</text>
+  <text x="730" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">→ план дискавері</text>
+</g>
+
+<g class="nt" data-id="t-plan" onclick="sel(this)">
+  <rect x="828" y="326" width="144" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="900" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Планування</text>
+  <text x="900" y="360" text-anchor="middle" fill="#212529" font-size="10.5">зустрічей</text>
+</g>
+
+<!-- ═══ LOOP TASKS ═══ -->
+<g class="nt" data-id="t-prep" onclick="sel(this)">
+  <rect x="995" y="629" width="130" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="1060" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Підготовка</text>
+  <text x="1060" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">питань</text>
+</g>
+
+<g class="nt" data-id="t-agenda" onclick="sel(this)">
+  <rect x="995" y="326" width="130" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="1060" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Порядок</text>
+  <text x="1060" y="360" text-anchor="middle" fill="#212529" font-size="10.5">денний</text>
+</g>
+
+<g class="nt" data-id="t-meeting" onclick="sel(this)">
+  <rect x="1183" y="94" width="144" height="46" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <rect x="1193" y="103" width="8" height="11" rx="4" fill="none" stroke="#868e96" stroke-width="1.1"/>
+  <path d="M1189,115 Q1189,123 1197,123 Q1205,123 1205,115" fill="none" stroke="#868e96" stroke-width="1.1"/>
+  <line x1="1197" y1="123" x2="1197" y2="127" stroke="#868e96" stroke-width="1.1"/>
+  <text x="1237" y="113" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Зустріч</text>
+  <text x="1237" y="127" text-anchor="middle" fill="#212529" font-size="10.5">з записом</text>
+</g>
+
+<g class="nt" data-id="t-transcr" onclick="sel(this)">
+  <rect x="1355" y="629" width="120" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="1415" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Аналіз</text>
+  <text x="1415" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">транскрипту</text>
+</g>
+
+<g class="nt" data-id="t-protocol" onclick="sel(this)">
+  <rect x="1490" y="629" width="130" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="1555" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Написання</text>
+  <text x="1555" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">протоколу</text>
+</g>
+
+<g class="nt" data-id="t-review" onclick="sel(this)">
+  <rect x="1490" y="326" width="120" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="1550" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Review</text>
+  <text x="1550" y="360" text-anchor="middle" fill="#212529" font-size="10.5">протоколу</text>
+</g>
+
+<g class="nt" data-id="gw-more" onclick="sel(this)">
+  <polygon points="1650,327 1675,352 1650,377 1625,352" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="1638" y="396" text-anchor="end" fill="#495057" font-size="10">Ще зустрічі?</text>
+</g>
+
+<!-- ═══ ЗАВЕРШЕННЯ ДИСКАВЕРІ ═══ -->
+<g class="nt" data-id="t-mapping" onclick="sel(this)">
+  <rect x="1715" y="629" width="150" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="1790" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Маппінг</text>
+  <text x="1790" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">на модулі Odoo 19</text>
+</g>
+
+<g class="nt" data-id="t-gap" onclick="sel(this)">
+  <rect x="1715" y="326" width="150" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="1790" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Gap-аналіз</text>
+  <text x="1790" y="360" text-anchor="middle" fill="#212529" font-size="10.5">AS-IS / TO-BE</text>
+</g>
+
+<g class="nt" data-id="t-scope" onclick="sel(this)">
+  <rect x="1885" y="326" width="150" height="52" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="1960" y="346" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Формування</text>
+  <text x="1960" y="360" text-anchor="middle" fill="#212529" font-size="10.5">scope</text>
+</g>
+
+<g class="nt" data-id="t-report" onclick="sel(this)">
+  <rect x="1885" y="629" width="150" height="52" rx="6" fill="#dce4ff" stroke="#4263eb" stroke-width="1.5"/>
+  <text x="1960" y="649" text-anchor="middle" fill="#1e3a8a" font-weight="600" font-size="10.5">Discovery</text>
+  <text x="1960" y="663" text-anchor="middle" fill="#1e3a8a" font-size="10.5">звіт</text>
+</g>
+
+<!-- NEW: БА: Надання звіту клієнту  cx=2115 cy=352  rect(2045,326,140,52) -->
+<g class="nt" data-id="t-deliver" onclick="sel(this)">
+  <rect x="2045" y="326" width="140" height="52" rx="6" fill="white" stroke="#2f9e44" stroke-width="1.5"/>
+  <text x="2115" y="343" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Надання звіту</text>
+  <text x="2115" y="357" text-anchor="middle" fill="#212529" font-size="10.5">клієнту</text>
+  <text x="2115" y="370" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- NEW: Презентація Discovery  cx=2280 cy=117  rect(2210,94,140,46) -->
+<g class="nt" data-id="t-present" onclick="sel(this)">
+  <rect x="2210" y="94" width="140" height="46" rx="6" fill="white" stroke="#2f9e44" stroke-width="1.5"/>
+  <rect x="2220" y="103" width="8" height="11" rx="4" fill="none" stroke="#2f9e44" stroke-width="1.1"/>
+  <path d="M2216,115 Q2216,123 2224,123 Q2232,123 2232,115" fill="none" stroke="#2f9e44" stroke-width="1.1"/>
+  <line x1="2224" y1="123" x2="2224" y2="127" stroke="#2f9e44" stroke-width="1.1"/>
+  <text x="2272" y="113" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Презентація</text>
+  <text x="2272" y="127" text-anchor="middle" fill="#212529" font-size="10.5">Discovery</text>
+</g>
+
+<!-- Клієнт: Погодження звіту  cx=2440 cy=117  rect(2365,94,150,46) — MOVED -->
+<g class="nt" data-id="t-approve" onclick="sel(this)">
+  <rect x="2365" y="94" width="150" height="46" rx="6" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="2440" y="113" text-anchor="middle" fill="#212529" font-weight="600" font-size="10.5">Погодження</text>
+  <text x="2440" y="127" text-anchor="middle" fill="#212529" font-size="10.5">звіту</text>
+</g>
+
+<!-- Gateway: Звіт погоджено?  cx=2560 cy=117 — MOVED -->
+<g class="nt" data-id="gw-ok" onclick="sel(this)">
+  <polygon points="2560,92 2585,117 2560,142 2535,117" fill="white" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="2548" y="161" text-anchor="end" fill="#495057" font-size="10">Погоджено?</text>
+</g>
+
+<!-- ═══ MVP TASKS ═══ -->
+
+<!-- Claude ТЗ та специфікація  cx=2717 cy=655  rect(2640,629,155,52) -->
+<g class="nt" data-id="t-tz" onclick="sel(this)">
+  <rect x="2640" y="629" width="155" height="52" rx="6" fill="#ede9fe" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="2717" y="645" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">ТЗ та</text>
+  <text x="2717" y="659" text-anchor="middle" fill="#3b1fa3" font-size="10.5">специфікація</text>
+  <text x="2717" y="672" text-anchor="middle" fill="#5f3dc4" font-size="9">Claude</text>
+</g>
+
+<!-- БА Конфігурація Odoo 19  cx=2712 cy=352  rect(2640,326,145,52) -->
+<g class="nt" data-id="t-config" onclick="sel(this)">
+  <rect x="2640" y="326" width="145" height="52" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="2712" y="342" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Конфігурація</text>
+  <text x="2712" y="356" text-anchor="middle" fill="#212529" font-size="10.5">Odoo 19</text>
+  <text x="2712" y="369" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- Claude Код кастомних модулів  cx=2912 cy=655  rect(2840,629,145,52) -->
+<g class="nt" data-id="t-code" onclick="sel(this)">
+  <rect x="2840" y="629" width="145" height="52" rx="6" fill="#ede9fe" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="2912" y="645" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Код кастомних</text>
+  <text x="2912" y="659" text-anchor="middle" fill="#3b1fa3" font-size="10.5">модулів</text>
+  <text x="2912" y="672" text-anchor="middle" fill="#5f3dc4" font-size="9">Claude</text>
+</g>
+
+<!-- NEW: Code Review  cx=2912 cy=352  rect(2840,326,145,52) -->
+<g class="nt" data-id="t-codereview" onclick="sel(this)">
+  <rect x="2840" y="326" width="145" height="52" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="2912" y="342" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Code Review</text>
+  <text x="2912" y="356" text-anchor="middle" fill="#212529" font-size="10.5">кастомних модулів</text>
+  <text x="2912" y="369" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- БА Деплой кастомних модулів  cx=3112 cy=352  rect(3040,326,145,52) -->
+<g class="nt" data-id="t-deploy" onclick="sel(this)">
+  <rect x="3040" y="326" width="145" height="52" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3112" y="342" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Деплой</text>
+  <text x="3112" y="356" text-anchor="middle" fill="#212529" font-size="10.5">кастомних модулів</text>
+  <text x="3112" y="369" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- БА Майстер-дані та права  cx=3312 cy=352  rect(3240,326,145,52) -->
+<g class="nt" data-id="t-masterdata" onclick="sel(this)">
+  <rect x="3240" y="326" width="145" height="52" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3312" y="342" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Майстер-дані</text>
+  <text x="3312" y="356" text-anchor="middle" fill="#212529" font-size="10.5">та права доступу</text>
+  <text x="3312" y="369" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- NEW: Тренінг користувачів  cx=3512 cy=352  rect(3440,326,145,52) -->
+<g class="nt" data-id="t-training" onclick="sel(this)">
+  <rect x="3440" y="326" width="145" height="52" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3512" y="342" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Тренінг</text>
+  <text x="3512" y="356" text-anchor="middle" fill="#212529" font-size="10.5">користувачів</text>
+  <text x="3512" y="369" text-anchor="middle" fill="#868e96" font-size="9">БА</text>
+</g>
+
+<!-- Клієнт UAT тестування  cx=3512 cy=117  rect(3440,94,145,46) — MOVED -->
+<g class="nt" data-id="t-uat" onclick="sel(this)">
+  <rect x="3440" y="94" width="145" height="46" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3512" y="112" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">UAT тестування</text>
+  <text x="3512" y="126" text-anchor="middle" fill="#3b1fa3" font-size="10.5">MVP</text>
+</g>
+
+<!-- Gateway: MVP прийнято?  cx=3620 cy=117 — MOVED -->
+<g class="nt" data-id="gw-mvp" onclick="sel(this)">
+  <polygon points="3620,92 3645,117 3620,142 3595,117" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3608" y="161" text-anchor="end" fill="#5f3dc4" font-size="10">MVP прийнято?</text>
+</g>
+
+<!-- NEW: Gateway: Причина відмови?  cx=3620 cy=352 -->
+<g class="nt" data-id="gw-reason" onclick="sel(this)">
+  <polygon points="3620,327 3645,352 3620,377 3595,352" fill="white" stroke="#e03131" stroke-width="1.5"/>
+  <text x="3632" y="396" fill="#e03131" font-size="10">Причина відмови?</text>
+</g>
+
+<!-- NEW: Підписання Acceptance Certificate  cx=3735 cy=117  rect(3660,94,150,46) -->
+<g class="nt" data-id="t-accept" onclick="sel(this)">
+  <rect x="3660" y="94" width="150" height="46" rx="6" fill="white" stroke="#7048e8" stroke-width="1.5"/>
+  <text x="3735" y="110" text-anchor="middle" fill="#3b1fa3" font-weight="600" font-size="10.5">Підписання</text>
+  <text x="3735" y="124" text-anchor="middle" fill="#3b1fa3" font-size="10">Acceptance Certificate</text>
+</g>
+
+<!-- END EVENT  cx=3870 cy=117 -->
+<circle cx="3870" cy="117" r="19" fill="white" stroke="#e03131" stroke-width="3"/>
+<circle cx="3870" cy="117" r="11" fill="#e03131"/>
+<text x="3870" y="148" fill="#495057" text-anchor="middle" font-size="10">Кінець</text>
+
+<!-- ═══ DATA OBJECTS ═══ -->
+
+<!-- DOC-1: ТЗ на кастомні модулі (above t-code, cx=2912) -->
+<polygon points="2874,530 2940,530 2950,540 2950,566 2874,566"
+         fill="#f3f0ff" stroke="#7048e8" stroke-width="1.2"/>
+<polyline points="2940,530 2940,540 2950,540" fill="none" stroke="#7048e8" stroke-width="1.2"/>
+<text x="2912" y="546" text-anchor="middle" fill="#3b1fa3" font-size="9" font-weight="600">ТЗ на кастомні</text>
+<text x="2912" y="558" text-anchor="middle" fill="#3b1fa3" font-size="9">модулі</text>
+<line x1="2912" y1="566" x2="2912" y2="629" stroke="#7048e8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ap)"/>
+
+<!-- DOC-2: Специфікація конфігурації (above t-config, cx=2712) -->
+<polygon points="2674,252 2740,252 2750,262 2750,292 2674,292"
+         fill="#f3f0ff" stroke="#7048e8" stroke-width="1.2"/>
+<polyline points="2740,252 2740,262 2750,262" fill="none" stroke="#7048e8" stroke-width="1.2"/>
+<text x="2712" y="268" text-anchor="middle" fill="#3b1fa3" font-size="9" font-weight="600">Специфікація</text>
+<text x="2712" y="280" text-anchor="middle" fill="#3b1fa3" font-size="9">конфігурації</text>
+<line x1="2712" y1="292" x2="2712" y2="326" stroke="#7048e8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ap)"/>
+
+<!-- DOC-3: Код модулів Python/XML (above t-codereview, cx=2912) -->
+<polygon points="2874,252 2940,252 2950,262 2950,292 2874,292"
+         fill="#f3f0ff" stroke="#7048e8" stroke-width="1.2"/>
+<polyline points="2940,252 2940,262 2950,262" fill="none" stroke="#7048e8" stroke-width="1.2"/>
+<text x="2912" y="268" text-anchor="middle" fill="#3b1fa3" font-size="9" font-weight="600">Код модулів</text>
+<text x="2912" y="280" text-anchor="middle" fill="#3b1fa3" font-size="9">Python / XML</text>
+<line x1="2912" y1="292" x2="2912" y2="326" stroke="#7048e8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ap)"/>
+
+<!-- DOC-4: Протокол UAT (above gw-mvp, cx=3620) -->
+<polygon points="3582,24 3648,24 3658,34 3658,64 3582,64"
+         fill="#f3f0ff" stroke="#7048e8" stroke-width="1.2"/>
+<polyline points="3648,24 3648,34 3658,34" fill="none" stroke="#7048e8" stroke-width="1.2"/>
+<text x="3620" y="40" text-anchor="middle" fill="#3b1fa3" font-size="9" font-weight="600">Протокол</text>
+<text x="3620" y="52" text-anchor="middle" fill="#3b1fa3" font-size="9">UAT</text>
+<line x1="3620" y1="64" x2="3620" y2="92" stroke="#7048e8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ap)"/>
+
+<!-- DOC-5: Acceptance Certificate (above t-accept, cx=3735) -->
+<polygon points="3697,24 3763,24 3773,34 3773,64 3697,64"
+         fill="#f3f0ff" stroke="#7048e8" stroke-width="1.2"/>
+<polyline points="3763,24 3763,34 3773,34" fill="none" stroke="#7048e8" stroke-width="1.2"/>
+<text x="3735" y="40" text-anchor="middle" fill="#3b1fa3" font-size="9" font-weight="600">Acceptance</text>
+<text x="3735" y="52" text-anchor="middle" fill="#3b1fa3" font-size="9">Certificate</text>
+<line x1="3735" y1="64" x2="3735" y2="94" stroke="#7048e8" stroke-width="1" stroke-dasharray="3,2" marker-end="url(#ap)"/>
+
+<!-- ═══ ГОТОВО: підсвічування завдань зі скілами+інструкціями (блок ІНІЦІАЦІЯ) ═══ -->
+<g id="done-hl" pointer-events="none">
+  <!-- t-research (5 скілів) -->
+  <rect x="303" y="624" width="165" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="6" opacity="0.18"/>
+  <rect x="303" y="624" width="165" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="2.2"/>
+  <circle cx="463" cy="629" r="9" fill="#2f9e44" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M459,629 l3,3 l5,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- t-prepkof (3 скіли) -->
+  <rect x="485" y="624" width="150" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="6" opacity="0.18"/>
+  <rect x="485" y="624" width="150" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="2.2"/>
+  <circle cx="630" cy="629" r="9" fill="#2f9e44" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M626,629 l3,3 l5,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- t-analkof (2 скіли) -->
+  <rect x="653" y="624" width="154" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="6" opacity="0.18"/>
+  <rect x="653" y="624" width="154" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="2.2"/>
+  <circle cx="802" cy="629" r="9" fill="#2f9e44" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M798,629 l3,3 l5,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- t-prep (цикл · 2 скіли v0.1.9) -->
+  <rect x="990" y="624" width="140" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="6" opacity="0.18"/>
+  <rect x="990" y="624" width="140" height="62" rx="10" fill="none" stroke="#2f9e44" stroke-width="2.2"/>
+  <circle cx="1125" cy="629" r="9" fill="#2f9e44" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M1121,629 l3,3 l5,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="1060" y="700" text-anchor="middle" fill="#2b6e36" font-size="9" font-weight="600">скіли ✓ плагін v0.1.9</text>
+</g>
+
+<!-- ═══ SEQUENCE FLOWS ═══ -->
+
+<!-- 1. Start → Внутрішня зустріч -->
+<path d="M112,137 L112,352 L140,352" fill="none" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 2. Внутрішня зустріч → Claude Аналіз -->
+<path d="M210,378 L210,480 L385,480 L385,629" fill="none" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 3. Claude Аналіз → Claude Підготовка Установчої Зустрічі -->
+<line x1="463" y1="655" x2="490" y2="655" stroke="#4263eb" stroke-width="1.5" marker-end="url(#ab)"/>
+
+<!-- 4. Claude Підготовка → Установча Зустріч -->
+<path d="M560,629 L560,117 L658,117" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 5. Установча Зустріч → Claude Аналіз Установчої Зустрічі -->
+<path d="M730,140 L730,629" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 6. Claude Аналіз Установчої Зустрічі → БА Планування -->
+<path d="M802,655 L900,655 L900,378" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 7. БА Планування → Claude Підготовка питань -->
+<path d="M930,378 L930,480 L1025,480 L1025,629" fill="none" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 8. Claude Підготовка питань → БА Порядок денний -->
+<path d="M1060,629 L1060,378" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 9. БА Порядок денний → Зустріч -->
+<path d="M1125,352 L1255,352 L1255,140" fill="none" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 10. Зустріч → Claude Аналіз транскрипту -->
+<path d="M1290,140 L1290,480 L1415,480 L1415,629" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 11. Claude Аналіз → Claude Протокол -->
+<line x1="1475" y1="655" x2="1490" y2="655" stroke="#4263eb" stroke-width="1.5" marker-end="url(#ab)"/>
+
+<!-- 12. Claude Протокол → БА Review -->
+<path d="M1555,629 L1555,378" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 13. БА Review → Gateway Ще зустрічі? -->
+<line x1="1610" y1="352" x2="1625" y2="352" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 14. Gateway Так — loop back via bottom of Claude lane -->
+<path d="M1650,377 L1650,792 L1118,792 L1118,681"
+      fill="none" stroke="#2f9e44" stroke-width="1.8" stroke-dasharray="5,3" marker-end="url(#ag)"/>
+<text x="1310" y="810" fill="#2f9e44" font-size="10" font-weight="600" text-anchor="middle">Так — наступна зустріч</text>
+
+<!-- 15. Gateway Ні — exit loop to Claude Маппінг -->
+<path d="M1675,352 L1702,352 L1702,480 L1790,480 L1790,629"
+      fill="none" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="1708" y="342" fill="#495057" font-size="10">Ні</text>
+
+<!-- 16. Claude Маппінг → БА Gap-аналіз -->
+<path d="M1820,629 L1820,378" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 17. БА Gap-аналіз → БА Scope -->
+<line x1="1865" y1="352" x2="1885" y2="352" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 18. БА Scope → Claude Discovery звіт (down) -->
+<path d="M1960,378 L1960,629" fill="none" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+
+<!-- 19. Claude Discovery звіт → БА Надання звіту (cross-lane up) -->
+<path d="M1990,629 L1990,480 L2115,480 L2115,378"
+      fill="none" stroke="#2f9e44" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- 20. БА Надання звіту → Client Презентація Discovery (up to Client lane) -->
+<path d="M2115,326 L2115,117 L2210,117"
+      fill="none" stroke="#2f9e44" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- 21. Client Презентація → Client Погодження -->
+<line x1="2350" y1="117" x2="2365" y2="117" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 22. Client Погодження → gw-ok -->
+<line x1="2515" y1="117" x2="2535" y2="117" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+
+<!-- 23. gw-ok Так → Claude ТЗ (down to Claude lane, green) -->
+<path d="M2585,117 L2598,117 L2598,655 L2640,655"
+      fill="none" stroke="#2f9e44" stroke-width="1.5" marker-end="url(#ag)"/>
+<text x="2591" y="107" fill="#2f9e44" font-size="10">Так</text>
+
+<!-- 24. gw-ok Ні → loop back to BA Scope (route below tasks y=400) -->
+<path d="M2560,142 L2560,400 L1920,400 L1920,378"
+      fill="none" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="2568" y="200" fill="#e03131" font-size="10">Ні</text>
+
+<!-- 25. Claude ТЗ → Claude Код (right) -->
+<line x1="2795" y1="655" x2="2840" y2="655" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 26. Claude ТЗ → БА Конфігурація (up, parallel track, purple dashed) -->
+<path d="M2717,629 L2717,378"
+      fill="none" stroke="#7048e8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ap)"/>
+
+<!-- 27. Claude Код → Code Review (up, cross-lane) -->
+<path d="M2866,629 L2866,378"
+      fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 28. Code Review OK → БА Деплой (right) -->
+<line x1="2985" y1="352" x2="3040" y2="352" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+<text x="3010" y="342" fill="#2f9e44" font-size="9">OK</text>
+
+<!-- 29. Code Review Fail → Claude Код (loop back, red dashed) -->
+<path d="M2840,352 L2800,352 L2800,720 L2912,720 L2912,681"
+      fill="none" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="2788" y="540" fill="#e03131" font-size="10">Ні</text>
+
+<!-- 30. БА Конфігурація → БА Майстер-дані (route below tasks y=420) -->
+<path d="M2750,378 L2750,420 L3312,420 L3312,378"
+      fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 31. БА Деплой → БА Майстер-дані (right) -->
+<line x1="3185" y1="352" x2="3240" y2="352" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 32. БА Майстер-дані → БА Тренінг (right) -->
+<line x1="3385" y1="352" x2="3440" y2="352" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 33. БА Тренінг → Client UAT (up, cross-lane) -->
+<path d="M3512,326 L3512,140"
+      fill="none" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 34. Client UAT → gw-mvp -->
+<line x1="3585" y1="117" x2="3595" y2="117" stroke="#7048e8" stroke-width="1.5" marker-end="url(#ap)"/>
+
+<!-- 35. gw-mvp Так → t-accept (green) -->
+<line x1="3645" y1="117" x2="3660" y2="117" stroke="#2f9e44" stroke-width="1.5" marker-end="url(#ag)"/>
+<text x="3650" y="107" fill="#2f9e44" font-size="10">Так</text>
+
+<!-- 36. t-accept → END -->
+<line x1="3810" y1="117" x2="3851" y2="117" stroke="#2f9e44" stroke-width="1.5" marker-end="url(#ag)"/>
+
+<!-- 37. gw-mvp Ні → gw-reason (down to BA lane) -->
+<path d="M3620,142 L3620,327"
+      fill="none" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="3628" y="230" fill="#e03131" font-size="10">Ні</text>
+
+<!-- 38. gw-reason Баги → Claude Код (long loop, red) -->
+<path d="M3620,377 L3620,720 L2950,720 L2950,681"
+      fill="none" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="3310" y="738" fill="#e03131" font-size="10" text-anchor="middle">Баги → виправити код</text>
+
+<!-- 39. gw-reason Конфіг помилки → БА Конфіг (long loop, orange) -->
+<path d="M3595,352 L3595,450 L2680,450 L2680,378"
+      fill="none" stroke="#f59f00" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ao)"/>
+<text x="3155" y="468" fill="#b45309" font-size="10" text-anchor="middle">Конфіг помилки → переналаштувати</text>
+
+<!-- LEGEND -->
+<rect x="82" y="724" width="740" height="66" rx="6" fill="white" stroke="#dee2e6" stroke-width="1"/>
+<text x="97" y="742" fill="#495057" font-size="11" font-weight="600">Позначення</text>
+<line x1="97"  y1="754" x2="122" y2="754" stroke="#868e96" stroke-width="1.5" marker-end="url(#a)"/>
+<text x="127" y="757" fill="#495057" font-size="10">Послідовність</text>
+<line x1="97"  y1="772" x2="122" y2="772" stroke="#4263eb" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ab)"/>
+<text x="127" y="775" fill="#3451b2" font-size="10">Взаємодія з Claude (дискавері)</text>
+<rect x="305" y="747" width="10" height="10" rx="2" fill="#dce4ff" stroke="#4263eb" stroke-width="1"/>
+<text x="320" y="757" fill="#3451b2" font-size="10">Завдання Claude</text>
+<line x1="305" y1="771" x2="330" y2="771" stroke="#7048e8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ap)"/>
+<text x="335" y="775" fill="#5f3dc4" font-size="10">MVP фаза</text>
+<rect x="430" y="747" width="10" height="10" rx="2" fill="#ede9fe" stroke="#7048e8" stroke-width="1"/>
+<text x="445" y="757" fill="#5f3dc4" font-size="10">Завдання MVP</text>
+<line x1="430" y1="771" x2="455" y2="771" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="460" y="775" fill="#e03131" font-size="10">Повернення/відмова</text>
+<!-- ГОТОВО — статус скілів -->
+<rect x="578" y="730" width="240" height="54" rx="6" fill="#f3fbf5" stroke="#2f9e44" stroke-width="1.5"/>
+<rect x="590" y="741" width="22" height="15" rx="3" fill="#dce4ff" stroke="#2f9e44" stroke-width="2.5"/>
+<circle cx="612" cy="741" r="6.5" fill="#2f9e44" stroke="#ffffff" stroke-width="1.2"/>
+<path d="M609,741 l2,2 l4,-5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="623" y="745" fill="#2b6e36" font-size="10.5" font-weight="700">Скіли + інструкції готові</text>
+<text x="623" y="760" fill="#2b6e36" font-size="9">12 скілів · плагін v0.7.4 · QA пройдено</text>
+<text x="623" y="773" fill="#868e96" font-size="9">блок ІНІЦІАЦІЯ — 3 завдання Claude</text>
+
+</svg>
+</div></div>
+<div id="view2" class="view"><div class="wrap" id="wrap2"><svg id="svg2" viewBox="0 0 1320 2172" xmlns="http://www.w3.org/2000/svg" font-family='system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' font-size="11" style="width:1320px;height:2172px;display:block;background:#fff;border-radius:6px;"><defs><marker id="da" markerWidth="9" markerHeight="7" refX="7.5" refY="3.5" orient="auto"><polygon points="0,0 9,3.5 0,7" fill="#868e96"/></marker><marker id="db" markerWidth="9" markerHeight="7" refX="7.5" refY="3.5" orient="auto"><polygon points="0,0 9,3.5 0,7" fill="#4263eb"/></marker></defs><text x="660" y="60" text-anchor="middle" font-size="27" font-weight="700" fill="#212529">ІНІЦІАЦІЯ — процес і скіли</text><text x="660" y="82" text-anchor="middle" font-size="14" fill="#868e96">12 скілів Claude · 3 блоки · від передачі клієнта до старту дискавері</text><rect x="1040" y="38" width="244" height="30" rx="15" fill="#d3f9d8" stroke="#2f9e44" stroke-width="1.8"/><circle cx="1062" cy="53" r="8" fill="#2f9e44"/><path d="M1058,53 l3,3 l5,-6" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><text x="1078" y="58" font-size="13" font-weight="700" fill="#2b6e36">ГОТОВО · плагін v0.7.4</text><rect x="40" y="104" width="1240" height="56" rx="10" fill="#e6fcf5" stroke="#0ca678" stroke-width="1.8"/><rect x="61" y="123" width="26" height="18" rx="2" fill="none" stroke="#087f5b" stroke-width="1.6"/><polyline points="61,123 74,134 87,123" fill="none" stroke="#087f5b" stroke-width="1.6"/><text x="104" y="129" font-size="15" font-weight="700" fill="#087f5b">СТАРТ — менеджер передав клієнта</text><text x="104" y="146" font-size="12" fill="#087f5b" opacity="0.8">матеріали від продажів: листування, CRM, презентації, дзвінки</text><line x1="410" y1="160" x2="410" y2="194" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><rect x="40" y="194" width="1240" height="34" rx="6" fill="#4263eb"/><text x="56" y="216" font-size="14.5" font-weight="700" fill="#ffffff">БЛОК 1 · Аналіз інформації + дослідження клієнта</text><line x1="410" y1="228" x2="410" y2="262" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-1" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="262" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="262" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="262" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="306" r="19" fill="#4263eb"/><text x="80" y="312" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">1</text><text x="116" y="290" font-size="18.5" font-weight="700" fill="#1e3a8a">sales-handover-analyzer<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="314" font-size="15.5" fill="#212529">Аналіз матеріалів від продажника</text><text x="116" y="335" font-size="12.5" fill="#868e96">Claude · 10–20 хв</text><line x1="780" y1="306" x2="850" y2="306" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,275 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,275 1267,288 1280,288" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="301" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">бриф_[компанія].md</text><text x="868" y="322" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="350" x2="410" y2="384" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-2" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="384" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><circle cx="80" cy="428" r="19" fill="#4263eb"/><text x="80" y="434" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">2</text><text x="116" y="412" font-size="18.5" font-weight="700" fill="#1e3a8a">client-web-researcher</text><text x="116" y="436" font-size="15.5" fill="#212529">Дослідження клієнта: сайт, LinkedIn, новини</text><text x="116" y="457" font-size="12.5" fill="#868e96">Claude · 20–40 хв</text><line x1="780" y1="428" x2="850" y2="428" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,397 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,397 1267,410 1280,410" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="423" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">дослідження_[компанія].md</text><text x="868" y="444" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="472" x2="410" y2="506" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><text x="424" y="493" font-size="12" fill="#b45309" font-style="italic">якщо є час</text><g class="nt" data-id="d-3" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="506" width="740" height="88" rx="9" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.8" stroke-dasharray="6,4"/><circle cx="80" cy="550" r="19" fill="#adb5bd"/><text x="80" y="556" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">3</text><text x="116" y="534" font-size="18.5" font-weight="700" fill="#495057">competitor-mapper</text><rect x="694" y="518" width="74" height="19" rx="9" fill="#fff3bf" stroke="#f59f00" stroke-width="1"/><text x="731" y="531" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">опційно</text><text x="116" y="558" font-size="15.5" fill="#212529">Конкуренти та їхній IT-стек, патерни ринку</text><text x="116" y="579" font-size="12.5" fill="#868e96">Claude · 20–35 хв</text><line x1="780" y1="550" x2="850" y2="550" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,519 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,519 1267,532 1280,532" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="545" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">конкуренти_[компанія].md</text><text x="868" y="566" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="594" x2="410" y2="628" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><text x="424" y="615" font-size="12" fill="#b45309" font-style="italic">якщо галузь нова</text><g class="nt" data-id="d-4" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="628" width="740" height="88" rx="9" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.8" stroke-dasharray="6,4"/><circle cx="80" cy="672" r="19" fill="#adb5bd"/><text x="80" y="678" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">4</text><text x="116" y="656" font-size="18.5" font-weight="700" fill="#495057">industry-briefing</text><rect x="694" y="640" width="74" height="19" rx="9" fill="#fff3bf" stroke="#f59f00" stroke-width="1"/><text x="731" y="653" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">опційно</text><text x="116" y="680" font-size="15.5" fill="#212529">Галузевий контекст: процеси, модулі Odoo</text><text x="116" y="701" font-size="12.5" fill="#868e96">Claude · 20–35 хв</text><line x1="780" y1="672" x2="850" y2="672" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,641 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,641 1267,654 1280,654" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="667" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">галузь_[галузь].md</text><text x="868" y="688" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="716" x2="410" y2="750" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-5" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="750" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="750" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="750" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="794" r="19" fill="#4263eb"/><text x="80" y="800" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">5</text><text x="116" y="778" font-size="18.5" font-weight="700" fill="#1e3a8a">discovery-context-builder<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="802" font-size="15.5" fill="#212529">Зведення всього в єдиний пакет підготовки</text><text x="116" y="823" font-size="12.5" fill="#868e96">Claude · 15–25 хв</text><line x1="780" y1="794" x2="850" y2="794" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,763 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,763 1267,776 1280,776" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="789" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">підготовка_УЗ_[компанія].md</text><text x="868" y="810" font-size="12" fill="#868e96">Тільки команда</text><text x="1266" y="810" text-anchor="end" font-size="11.5" font-weight="700" fill="#2b6e36">фінал блоку</text></g><line x1="410" y1="838" x2="410" y2="872" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><rect x="40" y="872" width="1240" height="34" rx="6" fill="#7048e8"/><text x="56" y="894" font-size="14.5" font-weight="700" fill="#ffffff">БЛОК 2 · Підготовка до Установчої Зустрічі</text><line x1="410" y1="906" x2="410" y2="940" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-6" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="940" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="940" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="940" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="984" r="19" fill="#4263eb"/><text x="80" y="990" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">6</text><text x="116" y="968" font-size="18.5" font-weight="700" fill="#1e3a8a">kickoff-agenda-finalizer<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="992" font-size="15.5" fill="#212529">Порядок денний: зовнішній + внутрішній</text><text x="116" y="1013" font-size="12.5" fill="#868e96">Claude · 10–20 хв</text><line x1="780" y1="984" x2="850" y2="984" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,953 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,953 1267,966 1280,966" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="979" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">agenda_[компанія].md</text><text x="868" y="1000" font-size="12" fill="#868e96">Команда + клієнт</text></g><line x1="410" y1="1028" x2="410" y2="1062" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-7q" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1062" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="1062" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="1062" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="1106" r="19" fill="#4263eb"/><text x="80" y="1112" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">7</text><text x="116" y="1090" font-size="18.5" font-weight="700" fill="#1e3a8a">kickoff-question-builder<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="1114" font-size="15.5" fill="#212529">Опитувальник: питання + привʼязка до плану</text><text x="116" y="1135" font-size="12.5" fill="#868e96">Claude · 10–15 хв</text><line x1="780" y1="1106" x2="850" y2="1106" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1075 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1075 1267,1088 1280,1088" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1101" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">питання_УЗ_[компанія].md</text><text x="868" y="1122" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="1150" x2="410" y2="1184" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-7" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1184" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><circle cx="80" cy="1228" r="19" fill="#4263eb"/><text x="80" y="1234" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">8</text><text x="116" y="1212" font-size="18.5" font-weight="700" fill="#1e3a8a">facilitation-guide-builder</text><text x="116" y="1236" font-size="15.5" fill="#212529">Сценарій ведення: репліки, маркери відповідей</text><text x="116" y="1257" font-size="12.5" fill="#868e96">Claude · 15–25 хв</text><line x1="780" y1="1228" x2="850" y2="1228" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1197 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1197 1267,1210 1280,1210" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1223" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">facilitation_[компанія].md</text><text x="868" y="1244" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="1272" x2="410" y2="1306" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><text x="424" y="1293" font-size="12" fill="#b45309" font-style="italic">клієнт без досвіду</text><g class="nt" data-id="d-8" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1306" width="740" height="88" rx="9" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.8" stroke-dasharray="6,4"/><circle cx="80" cy="1350" r="19" fill="#adb5bd"/><text x="80" y="1356" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">9</text><text x="116" y="1334" font-size="18.5" font-weight="700" fill="#495057">discovery-charter-writer</text><rect x="694" y="1318" width="74" height="19" rx="9" fill="#fff3bf" stroke="#f59f00" stroke-width="1"/><text x="731" y="1331" text-anchor="middle" font-size="11" font-weight="700" fill="#b45309">опційно</text><text x="116" y="1358" font-size="15.5" fill="#212529">Документ клієнту: що таке дискавері</text><text x="116" y="1379" font-size="12.5" fill="#868e96">Claude · 10–15 хв</text><line x1="780" y1="1350" x2="850" y2="1350" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1319 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1319 1267,1332 1280,1332" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1345" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">charter_[компанія].md</text><text x="868" y="1366" font-size="12" fill="#868e96">Тільки клієнт</text></g><line x1="410" y1="1394" x2="410" y2="1428" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><rect x="40" y="1428" width="1240" height="56" rx="10" fill="#fff3bf" stroke="#f59f00" stroke-width="1.8"/><rect x="61" y="1445" width="26" height="22" rx="3" fill="none" stroke="#b45309" stroke-width="1.6"/><line x1="61" y1="1452" x2="87" y2="1452" stroke="#b45309" stroke-width="1.6"/><line x1="68" y1="1445" x2="68" y2="1441" stroke="#b45309" stroke-width="1.6"/><line x1="80" y1="1445" x2="80" y2="1441" stroke="#b45309" stroke-width="1.6"/><text x="104" y="1453" font-size="15" font-weight="700" fill="#b45309">УСТАНОВЧА ЗУСТРІЧ</text><text x="104" y="1470" font-size="12" fill="#b45309" opacity="0.8">перша зустріч з клієнтом · запис + транскрипт · відповіді фіксуються у питання_УЗ</text><line x1="410" y1="1484" x2="410" y2="1518" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><rect x="40" y="1518" width="1240" height="34" rx="6" fill="#2f9e44"/><text x="56" y="1540" font-size="14.5" font-weight="700" fill="#ffffff">БЛОК 3 · Аналіз Установчої Зустрічі + план дискавері</text><line x1="410" y1="1552" x2="410" y2="1586" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-9" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1586" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="1586" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="1586" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="1630" r="19" fill="#4263eb"/><text x="80" y="1636" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">10</text><text x="116" y="1614" font-size="18.5" font-weight="700" fill="#1e3a8a">kickoff-transcript-analyzer<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="1638" font-size="15.5" fill="#212529">Аналіз транскрипту УЗ: вимоги, ризики, scope</text><text x="116" y="1659" font-size="12.5" fill="#868e96">Claude · 15–25 хв</text><line x1="780" y1="1630" x2="850" y2="1630" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1599 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1599 1267,1612 1280,1612" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1625" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">аналіз_УЗ_[компанія].md</text><text x="868" y="1646" font-size="12" fill="#868e96">Тільки команда</text></g><line x1="410" y1="1674" x2="410" y2="1708" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-survey" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1708" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><circle cx="80" cy="1752" r="19" fill="#4263eb"/><text x="80" y="1758" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">11</text><text x="116" y="1736" font-size="18.5" font-weight="700" fill="#1e3a8a">meeting-protocol-builder</text><text x="116" y="1760" font-size="15.5" fill="#212529">Протокол обстеження (будь-яка зустріч): за темами, рішення, Humizer</text><text x="116" y="1781" font-size="12.5" fill="#868e96">Claude · 15–25 хв · крок Humizer</text><line x1="780" y1="1752" x2="850" y2="1752" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1721 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1721 1267,1734 1280,1734" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1747" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">протокол_[тип]_[дата]_[компанія].md + .docx</text><text x="868" y="1768" font-size="12" fill="#868e96">Для клієнта (на погодження)</text></g><line x1="410" y1="1796" x2="410" y2="1830" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><g class="nt" data-id="d-10" onclick="sel(this)" style="cursor:pointer"><rect x="40" y="1830" width="740" height="88" rx="9" fill="#eef2ff" stroke="#4263eb" stroke-width="1.8"/><rect x="40" y="1830" width="8" height="88" rx="9" fill="#f59f00"/><rect x="45" y="1830" width="6" height="88" fill="#eef2ff"/><circle cx="80" cy="1874" r="19" fill="#4263eb"/><text x="80" y="1880" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">12</text><text x="116" y="1858" font-size="18.5" font-weight="700" fill="#1e3a8a">discovery-plan-builder<tspan dx="7" font-size="14" fill="#b45309">★</tspan></text><text x="116" y="1882" font-size="15.5" fill="#212529">План дискавері: сесії, теми, deliverables</text><text x="116" y="1903" font-size="12.5" fill="#868e96">Claude · 20–30 хв</text><line x1="780" y1="1874" x2="850" y2="1874" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><path d="M852,1843 h415 l13,13 v49 h-428 z" fill="#ffffff" stroke="#adb5bd" stroke-width="1.4"/><polyline points="1267,1843 1267,1856 1280,1856" fill="none" stroke="#adb5bd" stroke-width="1.4"/><text x="868" y="1869" font-size="15" font-weight="700" fill="#343a40" font-family="ui-monospace, Menlo, Consolas, monospace">план_дискавері_[компанія].md</text><text x="868" y="1890" font-size="12" fill="#868e96">Команда (+клієнт)</text><text x="1266" y="1890" text-anchor="end" font-size="11.5" font-weight="700" fill="#2b6e36">фінал блоку</text></g><line x1="410" y1="1918" x2="410" y2="1952" stroke="#868e96" stroke-width="1.8" marker-end="url(#da)"/><rect x="40" y="1952" width="1240" height="56" rx="10" fill="#d3f9d8" stroke="#2f9e44" stroke-width="1.8"/><circle cx="74" cy="1980" r="13" fill="none" stroke="#2b6e36" stroke-width="1.8"/><circle cx="74" cy="1980" r="6" fill="#2b6e36"/><text x="104" y="1977" font-size="15" font-weight="700" fill="#2b6e36">СТАРТ ДИСКАВЕРІ</text><text x="104" y="1994" font-size="12" fill="#2b6e36" opacity="0.8">план дискавері готовий — команда переходить до сесій</text><rect x="40" y="2050" width="1240" height="92" rx="9" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.2"/><text x="56" y="2074" font-size="14" font-weight="700" fill="#212529">Позначення</text><rect x="56" y="2085" width="22" height="16" rx="4" fill="#eef2ff" stroke="#4263eb" stroke-width="1.4"/><text x="86" y="2098" font-size="12.5" fill="#212529">скіл Claude</text><rect x="206" y="2085" width="22" height="16" rx="4" fill="#f8f9fa" stroke="#adb5bd" stroke-width="1.4" stroke-dasharray="4,3"/><text x="236" y="2098" font-size="12.5" fill="#212529">опційний крок</text><rect x="371" y="2085" width="9" height="16" rx="3" fill="#f59f00"/><text x="387" y="2098" font-size="12.5" fill="#212529">★ мінімальний маршрут (1·5·6·7·10·12)</text><path d="M56,2111 h16 l5,5 v11 h-21 z" fill="#fff" stroke="#adb5bd" stroke-width="1.3"/><text x="86" y="2124" font-size="12.5" fill="#212529">результат — файл .md (папка outputs)</text><line x1="346" y1="2119" x2="372" y2="2119" stroke="#4263eb" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#db)"/><text x="380" y="2124" font-size="12.5" fill="#212529">скіл формує результат</text><text x="1266" y="2130" text-anchor="end" font-size="11.5" fill="#868e96" font-style="italic">Клікни картку скіла, щоб побачити деталі →</text></svg></div></div>
+
+<div id="panel">
+  <span id="px" onclick="cls()">✕</span>
+  <div id="pt"></div>
+  <div id="pb"></div>
+</div>
+
+<script>
+const nd = {
+  "t-internal":  { title:"Внутрішня зустріч (БА + менеджер продажів)", body:"Менеджер з продажів передає проектній команді всю наявну інформацію: листування, презентації, болі клієнта, обіцянки, специфіку галузі та ключових стейкхолдерів." },
+  "t-research":  { title:"Аналіз інформації + дослідження клієнта (Claude)", body:"5 скілів Claude послідовно формують пакет підготовки:\n• sales-handover-analyzer → бриф_[назва_компанії].md (аналіз матеріалів від сейлза)\n• client-web-researcher → дослідження_[назва_компанії].md (сайт, LinkedIn, новини)\n• competitor-mapper → конкуренти_[назва_компанії].md (якщо є час)\n• industry-briefing → галузь_[галузь]_[назва_компанії].md (для нових галузей)\n• discovery-context-builder → підготовка_УЗ_[назва_компанії].md (зведений пакет — завжди останній)\n\n✅ ГОТОВО — 5 скілів написані, провалідовані, зібрані в плагін odoo19-discovery-initiation v0.7.4." },
+  "t-prepkof":   { title:"Підготовка до Установчої Зустрічі (Claude)", body:"4 скіли Claude перетворюють підготовка_УЗ на практичні матеріали для зустрічі:\n• kickoff-agenda-finalizer → agenda_[назва_компанії].md (зовнішня версія для клієнта + внутрішня для команди)\n• kickoff-question-builder → питання_УЗ_[назва_компанії].md (детальний опитувальник, питання змаповані на входи плану — тільки команда)\n• facilitation-guide-builder → facilitation_[назва_компанії].md (сценарій ведення, репліки, нестандартні ситуації — тільки команда)\n• discovery-charter-writer → charter_[назва_компанії].md (пояснення дискавері для клієнта — опційно)\n\n✅ ГОТОВО — 4 скіли написані та провалідовані (плагін v0.7.4)." },
+  "t-kickoff":   { title:"Установча Зустріч (з записом)", body:"Перша офіційна зустріч з клієнтом: знайомство команд, підтвердження цілей проекту, очікування сторін. Записується та транскрибується." },
+  "t-analkof":   { title:"Аналіз Установчої Зустрічі → план дискавері (Claude)", body:"3 скіли Claude завершують блок ІНІЦІАЦІЯ:\n• kickoff-transcript-analyzer → аналіз_Установчої Зустрічі_[назва_компанії].md (учасники, підтверджені вимоги, нові ризики, відкриті питання, зміни scope)\n• meeting-protocol-builder → протокол_[тип]_[дата]_[компанія].md + .docx (офіційний документ клієнту, проста мова — крок Humizer)\n• discovery-plan-builder → план_дискавері_[назва_компанії].md (N сесій блоками A/B/C, деталі кожної сесії, deliverables дискавері)\n\n✅ ГОТОВО — 3 скіли написані та провалідовані (плагін v0.7.4)." },
+  "t-plan":      { title:"Планування зустрічей (БА)", body:"БА на основі плану дискавері від Claude розподіляє зустрічі по темах, призначає учасників і погоджує розклад." },
+  "t-prep":      { title:"Підготовка питань (Claude)", body:"Перед КОЖНОЮ зустріччю циклу — 2 скіли плагіна odoo19-discovery-sessions:\n• session-question-builder → питання_сесії-[N]_[компанія].md — внутрішній опитувальник з пам'яттю циклу: перенесене з минулої зустрічі першим, закрите не перепитує, виключене зі scope не питає. Веде журнал_дискавері_[компанія].md (bootstrap з плану, reconcile з нових протоколів).\n• session-client-prep-builder → спершу робочі .docx на зустріч (питання_сесії-[N].docx + план_дискавері.docx, якщо оновився), потім підготовка_клієнта_сесії-[N]_[компанія].md + брендований .docx — лист клієнту: що підготувати, над чим подумати, кого запросити (Humizer + фільтр чутливого).\n\n✅ ГОТОВО — 2 скіли написані, провалідовані, зібрані в плагін odoo19-discovery-sessions v0.1.9." },
+  "t-agenda":    { title:"Порядок денний (БА)", body:"БА правит опитувальник сесії (питання_сесії-[N]) своєю експертизою, фіналізує порядок денний і розсилає учасникам. Лист підготовки клієнту генерує session-client-prep-builder — надіслати за 2–3 робочі дні до зустрічі." },
+  "t-meeting":   { title:"Зустріч з записом", body:"Тематична зустріч з клієнтом за узгодженим порядком денним. Записується та автоматично транскрибується (Whisper, Fireflies, Otter тощо)." },
+  "t-transcr":   { title:"Аналіз транскрипту (Claude)", body:"Claude аналізує транскрипцію: витягує бізнес-вимоги, болі, рішення, відкриті питання та ключові домовленості." },
+  "t-protocol":  { title:"Написання протоколу (Claude)", body:"Claude формує структурований протокол: учасники, порядок денний, вимоги, рішення, action items з відповідальними та термінами.\n\n💡 Тепер покривається універсальним скілом meeting-protocol-builder (плагін ІНІЦІАЦІЯ v0.7.4): протокол на будь-яку зустріч циклу — .md + брендований .docx, крок Humizer." },
+  "t-review":    { title:"Review протоколу (БА)", body:"БА перевіряє протокол на точність, додає контекст. Погоджений протокол фіксується в базі знань проекту." },
+  "gw-more":     { title:"Ще зустрічі?", body:"Якщо заплановані наступні тематичні зустрічі — цикл повторюється. Якщо всі теми закриті — переходимо до аналізу scope." },
+  "t-mapping":   { title:"Маппінг на модулі Odoo 19 (Claude)", body:"Claude зіставляє всі вимоги з модулями Odoo 19: Sales, CRM, Inventory, MRP, Accounting, HR, Project та ін. Визначає стандарт, кастомізації, інтеграції." },
+  "t-gap":       { title:"Gap-аналіз AS-IS / TO-BE (БА)", body:"БА проектує цільові бізнес-процеси на Odoo 19 (TO-BE) і фіксує розриви з поточним станом (AS-IS)." },
+  "t-scope":     { title:"Формування scope (БА)", body:"БА формує підсумковий scope: модулі, кастомізації, інтеграції, виключення зі scope, припущення та ризики." },
+  "t-report":    { title:"Discovery звіт (Claude)", body:"Claude формує підсумковий Discovery-звіт: Executive Summary, scope, маппінг вимог, ризики, рекомендації та роадмап впровадження Odoo 19." },
+  "t-deliver":   { title:"Надання звіту клієнту (БА)", body:"БА надсилає підготовлений Discovery-звіт клієнту, організовує презентаційну зустріч та пояснює ключові висновки. Цей крок забезпечує, що клієнт отримав та ознайомився зі звітом перед погодженням." },
+  "t-present":   { title:"Презентація Discovery (Клієнт + БА)", body:"Офіційна презентація результатів дискавері з записом. БА та команда презентують звіт, відповідають на питання клієнта. Клієнт отримує повне розуміння scope та рекомендацій." },
+  "t-approve":   { title:"Погодження звіту (Клієнт)", body:"Клієнт рецензує Discovery-звіт після презентації. При зауваженнях — повернення на коригування. При погодженні — дискавері завершено, старт MVP." },
+  "gw-ok":       { title:"Звіт погоджено?", body:"Так → старт MVP фази. Ні → БА та Claude вносять правки і повторно погоджують." },
+  "t-tz":        { title:"ТЗ та специфікація (Claude)", body:"Claude генерує технічне завдання на кастомні модулі та детальну специфікацію конфігурації Odoo 19. Стартують два паралельні треки: Трек 1 — розробка (Claude пише код → Code Review → БА деплоїть), Трек 2 — конфігурація (БА налаштовує Odoo через UI)." },
+  "t-config":    { title:"Конфігурація Odoo 19 (БА)", body:"БА налаштовує Odoo через UI згідно зі специфікацією Claude: активує модулі, налаштовує workflow, форми, звіти, email-шаблони, інтеграції та бізнес-правила." },
+  "t-code":      { title:"Код кастомних модулів (Claude)", body:"Claude пише код кастомних модулів Odoo 19: models, views, wizards, reports, access rights, security rules. Готовий код надходить на Code Review до БА." },
+  "t-codereview":{ title:"Code Review кастомних модулів (БА)", body:"БА виконує перевірку коду: перевіряє відповідність специфікації, якість коду, безпеку та сумісність з Odoo 19. При успішному review — деплой. При виявленні помилок — повернення на доопрацювання до Claude." },
+  "t-deploy":    { title:"Деплой кастомних модулів (БА)", body:"БА деплоїть кастомні модулі після успішного Code Review на тестове середовище, проводить smoke-тестування та усуває технічні помилки." },
+  "t-masterdata":{ title:"Майстер-дані та права доступу (БА)", body:"БА імпортує майстер-дані: продукти, контрагенти, chart of accounts, одиниці виміру. Налаштовує ролі та права доступу користувачів відповідно до організаційної структури клієнта." },
+  "t-training":  { title:"Тренінг користувачів (БА)", body:"БА проводить навчання ключових користувачів клієнта: огляд функціоналу Odoo 19, відпрацювання бізнес-процесів в системі, відповіді на питання. Підготовка до UAT тестування." },
+  "t-uat":       { title:"UAT тестування MVP (Клієнт)", body:"Клієнт тестує MVP в реальних умовах після тренінгу: перевіряє ключові бізнес-процеси end-to-end, фіксує баги та зауваження. UAT проводиться з реальними майстер-даними." },
+  "gw-mvp":      { title:"MVP прийнято?", body:"Так → MVP прийнято клієнтом, підписання Acceptance Certificate та перехід до наступного етапу. Ні → аналіз причини відмови: баги (повернення до Claude для виправлення коду) або конфіг помилки (повернення до БА для переналаштування)." },
+  "gw-reason":   { title:"Причина відмови?", body:"Аналіз зауважень клієнта після UAT. Баги в кастомному коді → повернення до Claude для виправлення та повторного Code Review. Помилки конфігурації → повернення до БА для переналаштування Odoo 19." },
+  "t-accept":    { title:"Підписання Acceptance Certificate (Клієнт)", body:"Клієнт підписує Акт прийняття MVP. Документ підтверджує успішне завершення MVP фази та відповідність системи погодженому scope. Архівується як юридичний документ проекту." }
+};
+Object.assign(nd, {"d-1": {"title": "Крок 1 · sales-handover-analyzer (Claude)", "body": "Аналізує матеріали від менеджера продажів → структурований бриф.\n• Вхід: листування, CRM-нотатки, презентації, транскрипт дзвінка.\n• Результат: бриф_[компанія].md — профіль, стейкхолдери, болі, обіцянки (✅/⚠️/🚨), бюджет, терміни.\n• Час: 10–20 хв · частина мінімального маршруту."}, "d-2": {"title": "Крок 2 · client-web-researcher (Claude)", "body": "Дослідження клієнта в інтернеті: сайт, LinkedIn, новини.\n• Вхід: бриф або URL сайту.\n• Результат: дослідження_[компанія].md — підтвердження/суперечності з брифом, стейкхолдери, сигнали для scope, попередні модулі Odoo.\n• Час: 20–40 хв."}, "d-3": {"title": "Крок 3 · competitor-mapper (Claude, опційно)", "body": "Конкуренти клієнта, їхній IT-стек і патерни ринку. Запускати, якщо є час.\n• Результат: конкуренти_[компанія].md — картки конкурентів, сигнали scope (✅ потрібно / 💡 можливості / ⚠️ ризики).\n• Якщо конкурент уже на Odoo — сильний аргумент на УЗ.\n• Час: 20–35 хв."}, "d-4": {"title": "Крок 4 · industry-briefing (Claude, опційно)", "body": "Галузевий контекст. Запускати, якщо галузь нова для команди.\n• Результат: галузь_[галузь].md — типові процеси, болі галузі, модулі Odoo з пріоритетами, регуляторика.\n• Регуляторику критичну — верифікувати на офіційних джерелах.\n• Час: 20–35 хв."}, "d-5": {"title": "Крок 5 · discovery-context-builder (Claude)", "body": "Зводить усі попередні файли в єдиний пакет підготовки. Завжди останній у блоці 1.\n• Результат: підготовка_УЗ_[компанія].md — топ-3 факти, оцінка складності, реєстр ризиків, до 15 питань, порядок денний на 60–90 хв.\n• Час: 15–25 хв · фінал блоку 1 · мінімальний маршрут."}, "d-6": {"title": "Крок 6 · kickoff-agenda-finalizer (Claude)", "body": "Два порядки денних — зовнішній (клієнту) і внутрішній (команді з нотатками).\n• Вхід: підготовка_УЗ.\n• Результат: agenda_[компанія].md.\n• Зовнішню версію надсилати без внутрішніх нотаток.\n• Час: 10–20 хв · частина мінімального маршруту."}, "d-7q": {"title": "Крок 7 · kickoff-question-builder (Claude)", "body": "Детальний опитувальник: розгортає блоки agenda в питання з пріоритетами (🔴/🟡/⚪), полем для відповіді і тегом входу плану.\n• Вхід: agenda (+ підготовка_УЗ).\n• Результат: питання_УЗ_[компанія].md (тільки команда).\n• Карта покриття плану показує прогалини до зустрічі.\n• Час: 10–15 хв."}, "d-7": {"title": "Крок 8 · facilitation-guide-builder (Claude)", "body": "Сценарій ведення зустрічі: репліки, маркери відповідей (✅/⚠️), 9 нестандартних ситуацій.\n• Вхід: agenda.\n• Результат: facilitation_[компанія].md (тільки команда).\n• Час: 15–25 хв."}, "d-8": {"title": "Крок 9 · discovery-charter-writer (Claude, опційно)", "body": "Документ для клієнта (~1 стор.): що таке дискавері, що отримаєте, що потрібно від вас.\n• Результат: charter_[компанія].md (тільки клієнт).\n• Надіслати за 1–2 дні до УЗ. Для клієнтів без досвіду дискавері/ERP.\n• Час: 10–15 хв."}, "d-9": {"title": "Крок 10 · kickoff-transcript-analyzer (Claude)", "body": "Аналіз транскрипту Установчої Зустрічі: підтверджені вимоги, нові відкриття, ризики (🔴🟡🟢), відкриті питання, зміни scope.\n• Вхід: транскрипт або нотатки УЗ.\n• Результат: аналіз_УЗ_[компанія].md.\n• Час: 15–25 хв · частина мінімального маршруту."}, "d-survey": {"title": "Крок 11 · meeting-protocol-builder (Claude)", "body": "Універсальний документ для клієнта на БУДЬ-ЯКУ зустріч (установча/вимоги/статусна/інтеграції/навчання/демо) — Протокол обстеження. РЕЗУЛЬТАТИ за темами порядку денного; калібровано на 41 реальному протоколі.\n• Вхід: аналіз_Установчої Зустрічі.\n• Результат: протокол_[тип]_[дата]_[компанія].md + брендований .docx.\n• Вбудований крок Humizer — олюднення формулювань для замовника.\n• Час: 15–25 хв."}, "d-10": {"title": "Крок 12 · discovery-plan-builder (Claude)", "body": "Будує план дискавері: кількість сесій (блоки A/B/C), теми, учасники, deliverables.\n• Вхід: аналіз_УЗ.\n• Результат: план_дискавері_[компанія].md (версія 1.0, уточнюється після сесій).\n• Час: 20–30 хв · фінал блоку 3 · мінімальний маршрут."}});
+
+Object.assign(nd, {"d-7q": {"title": "Крок 7 · kickoff-question-builder (Claude)", "body": "Розгортає блоки agenda в детальний опитувальник до зустрічі.\n• Вхід: agenda (+ підготовка_УЗ — реєстр невідомого і ризики).\n• Результат: питання_УЗ_[компанія].md — питання за темами, пріоритети 🔴/🟡/⚪, поле «Відповідь:», тег входу плану ([scope], [процеси], [дані]…).\n• «Карта покриття плану» показує ще ДО зустрічі, чи вистачить інформації для плану і де прогалини.\n• «Парковка для дискавері» — глибокі питання, які НЕ задаємо на 60-хв зустрічі.\n• Заповнюється просто на зустрічі → структурований вхід для блоку 3.\n• Час: 10–15 хв · частина мінімального маршруту."}, "d-survey": {"title": "Крок 11 · meeting-protocol-builder (Claude)", "body": "Перетворює внутрішній аналіз на офіційний документ для клієнта — Протокол обстеження.\n• Вхід: аналіз_УЗ (або нотатки зустрічі) + бриф/agenda для реквізитів.\n• Результат: протокол_[тип]_[дата]_[компанія].md + брендований .docx (бланк ToDo): учасники, порядок денний, результати за темами, рішення, погодження.\n• Крок Humizer — олюднення формулювань для замовника; факти не змінюються.\n• Універсальний: будь-яка проєктна зустріч — вимоги, статусна, інтеграції, навчання, демо. Калібровано на 41 протоколі EDELWEIS.\n• Час: 15–25 хв · надсилається клієнту на погодження."}});
+let cur = null;
+function sel(el) {
+  if (cur) cur.classList.remove('sel');
+  el.classList.add('sel'); cur = el;
+  const d = nd[el.dataset.id]; if (!d) return;
+  document.getElementById('pt').textContent = d.title;
+  document.getElementById('pb').textContent = d.body;
+  document.getElementById('panel').classList.add('on');
+}
+function cls() {
+  document.getElementById('panel').classList.remove('on');
+  if (cur) cur.classList.remove('sel'); cur = null;
+}
+const VIEWS = { 1:{svg:'svg', z:1}, 2:{svg:'svg2', z:1} };
+let active = 1;
+function showView(n) {
+  active = n;
+  document.getElementById('view1').classList.toggle('on', n === 1);
+  document.getElementById('view2').classList.toggle('on', n === 2);
+  document.getElementById('tab1').classList.toggle('act', n === 1);
+  document.getElementById('tab2').classList.toggle('act', n === 2);
+  document.getElementById('sub').textContent = (n === 1)
+    ? 'BPMN 2.0 · повний процес · 🟢 зелена рамка = скіли+інструкції готові (ІНІЦІАЦІЯ)'
+    : 'ІНІЦІАЦІЯ · 12 скілів у 3 блоках · клікни картку скіла для деталей';
+  cls(); apz();
+}
+function zm(f) { const v = VIEWS[active]; v.z = Math.min(Math.max(v.z * f, 0.2), 3); apz(); }
+function zr()  { VIEWS[active].z = 1; apz(); }
+function apz() {
+  const v = VIEWS[active], s = document.getElementById(v.svg);
+  const vb = s.getAttribute('viewBox').split(/\s+/);
+  s.style.width  = Math.round(parseFloat(vb[2]) * v.z) + 'px';
+  s.style.height = Math.round(parseFloat(vb[3]) * v.z) + 'px';
+  document.getElementById('zl').textContent = Math.round(v.z * 100) + '%';
+}
+showView(1);
+</script>
+</body>
+</html>

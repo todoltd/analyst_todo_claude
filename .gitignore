@@ -1,0 +1,19 @@
+# Зібрані плагіни
+*.plugin
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Тимчасові файли
+*.tmp
+*.temp
+zicixbJG
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor
+.vscode/
+.idea/
