@@ -17,3 +17,7 @@ __pycache__/
 # Editor
 .vscode/
 .idea/
+
+# Артефакти sandbox-тестів (macOS блокує rm — лишаються у дереві, ігноруємо)
+.wtest
+.write_probe_*
