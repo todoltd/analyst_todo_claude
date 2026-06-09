@@ -21,3 +21,6 @@ __pycache__/
 # Артефакти sandbox-тестів (macOS блокує rm — лишаються у дереві, ігноруємо)
 .wtest
 .write_probe_*
+.probe_*
+_wtest
+test_write
