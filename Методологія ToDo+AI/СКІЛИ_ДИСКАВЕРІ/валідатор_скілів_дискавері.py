@@ -25,7 +25,7 @@ SESSION_SKILLS = {"session-question-builder", "session-client-prep-builder"}
 
 KICKOFF_OK = re.compile(
     r"kickoff[- ](agenda[- ]finalizer|transcript[- ]analyzer|question[- ]builder|survey[- ]protocol)", re.I)
-FORBIDDEN = [r"кік-?оф", r"kickoff_prep", r"\[клієнт\]"]
+FORBIDDEN = [r"кік-?оф", r"kickoff_prep", r"клієнт"]  # «клієнт» заборонено в методології — вживати «замовник»
 VERIF_RE = re.compile(r"верифікац|перед збереженн|самоперевірк|чеклист перед|перевір[ -].{0,40}перед", re.I)
 HINT_RE = re.compile(r"наступний крок", re.I)
 EMPTY_CODE = re.compile(r"(?<!`)``(?!`)")
