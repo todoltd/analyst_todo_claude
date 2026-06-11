@@ -1,0 +1,19 @@
+{
+  "name": "odoo19-mvp-build",
+  "version": "0.2.0",
+  "description": "Методологія етапу MVP / БІЛД для впровадження Odoo 19: SDD-ланцюжок із 7 скілів від затвердженого ТР до перевіреного td-модуля — reverse-spec, spec-writer (ТР→SPEC.md), architecture, scaffolding, code-dev, testing, pr-review. Стартує на статусі «Погодження клієнта», тримає трасування AC-01 наскрізь (SPEC → TODO → код → тест → рев'ю).",
+  "author": {
+    "name": "ToDo"
+  },
+  "keywords": [
+    "odoo",
+    "mvp",
+    "sdd",
+    "spec-driven",
+    "erp",
+    "розробка",
+    "тестування",
+    "pr-review",
+    "td-модулі"
+  ]
+}
