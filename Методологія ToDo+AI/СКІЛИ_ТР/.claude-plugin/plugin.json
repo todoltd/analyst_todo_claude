@@ -1,0 +1,16 @@
+{
+  "name": "odoo19-tr-authoring",
+  "version": "0.1.1",
+  "description": "Методологія шару ТР (Технічне рішення) для Odoo 19 — міст «дискавері/бриф → затверджений ТР → SPEC». 5 скілів: tr-usecases-acceptance (Use Cases+AC), tr-odoo-tech-design (опис реалізації td.*), tr-effort-instruction (Обсяг робіт+Інструкція), tr-review (QA), tr-registry-update (реєстр «Перелік ТР»).",
+  "author": {
+    "name": "ToDo"
+  },
+  "keywords": [
+    "odoo",
+    "тр",
+    "технічне-рішення",
+    "sdd",
+    "erp",
+    "business-analysis"
+  ]
+}

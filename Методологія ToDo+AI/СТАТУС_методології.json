@@ -1,0 +1,10 @@
+{
+  "_comment": "Джерело істини статусів методології (P4a). Версії беруться АВТОМАТИЧНО з plugin.json кожного пакета — тут НЕ дублюються. Статус — канон контракту SDD: чернетка | на розгляді | погоджено | виконано | застаріле. Рендериться генератор_проекцій.py status → оновлює P4:-якорі BPMN + СТАТУС_методології.html.",
+  "stages": [
+    { "id": "init",     "anchor": "init",     "title": "ІНІЦІАЦІЯ",          "package": "odoo19-discovery-initiation", "src": "СКІЛИ_виправлені", "status": "виконано", "skills": 12 },
+    { "id": "disc",     "anchor": "disc",     "title": "ДИСКАВЕРІ (цикл)",    "package": "odoo19-discovery-sessions",   "src": "СКІЛИ_ДИСКАВЕРІ",  "status": "виконано", "skills": 3 },
+    { "id": "closeout", "anchor": "closeout", "title": "ЗАВЕРШЕННЯ ДИСКАВЕРІ", "package": "odoo19-discovery-closeout",  "src": "СКІЛИ_ЗАВЕРШЕННЯ", "status": "виконано", "skills": 5 },
+    { "id": "tr",       "anchor": "tr",       "title": "ТР (Технічне рішення)","package": "odoo19-tr-authoring",        "src": "СКІЛИ_ТР",         "status": "виконано", "skills": 5 },
+    { "id": "mvp",      "anchor": "mvp",      "title": "MVP / БІЛД (2 треки)", "package": "odoo19-mvp-build",           "src": "СКІЛИ_MVP",        "status": "виконано", "skills": 11 }
+  ]
+}

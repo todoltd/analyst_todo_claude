@@ -31,8 +31,9 @@ MVP_SKILLS = {
 }
 TR_SKILLS = {
     "tr-functional-requirements", "tr-usecases-acceptance", "tr-odoo-tech-design", "tr-review",
-    "tr-registry-update", "tr-effort", "tr-scaffold",
+    "tr-registry-update", "tr-effort", "tr-effort-instruction", "tr-scaffold",
 }
+DOCS_REF = re.compile(r"docs/([^\s`)\"']+\.md)")  # посилання на довідник у тілі SKILL.md
 
 KICKOFF_OK = re.compile(
     r"kickoff[- ](agenda[- ]finalizer|transcript[- ]analyzer|question[- ]builder|survey[- ]protocol)", re.I)
@@ -45,7 +46,7 @@ SKILL_TOK = re.compile(r"`([a-z][a-z0-9]+(?:-[a-z0-9]+){1,4})`")
 SUFFIXES = ("-analyzer", "-builder", "-researcher", "-mapper", "-writer", "-finalizer", "-briefing")
 
 
-def lint(name, text, valid_names):
+def lint(name, text, valid_names, skill_dir=None):
     issues = []
     if not text.lstrip().startswith("---"):
         issues.append(("🔴", "немає frontmatter (---)"))
@@ -57,7 +58,10 @@ def lint(name, text, valid_names):
     if not re.search(r"^description:", text, re.M):
         issues.append(("🟡", "немає поля description"))
     fb_text = CLIENT_STATUS_OK.sub("", text)
-    for pat in FORBIDDEN:
+    # У шарі ТР «клієнт» — офіційний термін домену (статус реєстру «Погодження клієнта»,
+    # «узгодження клієнтом»), тож для tr-* скілів його не забороняємо; решта методології — «замовник».
+    forbidden = FORBIDDEN if not name.startswith("tr-") else [p for p in FORBIDDEN if "клієнт" not in p]
+    for pat in forbidden:
         for m in re.finditer(pat, fb_text, re.I):
             issues.append(("🔴", f"заборонений термін «{m.group(0)}»"))
             break
@@ -75,6 +79,10 @@ def lint(name, text, valid_names):
     for tok in sorted(set(SKILL_TOK.findall(text))):
         if tok.endswith(SUFFIXES) and tok not in valid_names:
             issues.append(("🔴", f"биле крос-посилання на скіл `{tok}`"))
+    if skill_dir is not None:
+        for ref in sorted(set(DOCS_REF.findall(text))):
+            if not (skill_dir / "docs" / ref).exists():
+                issues.append(("🔴", f"висяче посилання на довідник docs/{ref} (немає у {skill_dir.name}/docs/)"))
     return issues
 
 
@@ -86,7 +94,7 @@ def check_dir(skills_dir, valid):
         f = d / "SKILL.md"
         if not f.exists():
             print(f"🔴 {d.name}: немає SKILL.md"); reds += 1; total += 1; continue
-        issues = lint(d.name, f.read_text(encoding="utf-8"), valid)
+        issues = lint(d.name, f.read_text(encoding="utf-8"), valid, d)
         r = sum(1 for s, _ in issues if s == "🔴")
         y = sum(1 for s, _ in issues if s == "🟡")
         reds += r; yellows += y; total += len(issues)
