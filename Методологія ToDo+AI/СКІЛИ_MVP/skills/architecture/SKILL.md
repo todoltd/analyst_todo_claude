@@ -1,5 +1,5 @@
 ---
-name: odoo-architecture
+name: architecture
 description: >
   Generate or update ARCHITECTURE.md for an Odoo module from an approved
   SPEC.md. Use this skill when SPEC.md status is `approved` and the team
@@ -7,7 +7,7 @@ description: >
   "generate architecture", "create ARCHITECTURE.md", "technical design",
   "file structure for module", "plan the implementation", "before scaffolding".
   Never run this skill if SPEC.md status is not `approved` — send the developer
-  back to odoo-spec-writer first.
+  back to spec-writer first.
 ---
 
 # Odoo Architecture Skill

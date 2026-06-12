@@ -77,7 +77,7 @@ docs when in doubt — see `odoo-version-notes.md`).
 ## ToDo custom-module group convention
 
 New `td_*` / `<project>_<area>` modules define their **own** category + two
-groups (matches the `odoo-scaffolding` security template):
+groups (matches the `scaffolding` security template):
 
 ```xml
 <record id="module_category_{module}" model="ir.module.category">

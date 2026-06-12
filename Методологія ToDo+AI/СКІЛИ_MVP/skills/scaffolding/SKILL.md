@@ -1,5 +1,5 @@
 ---
-name: odoo-scaffolding
+name: scaffolding
 description: >
   Generate the complete Odoo module file skeleton from SPEC.md and
   ARCHITECTURE.md. Use this skill when both documents exist and are approved,

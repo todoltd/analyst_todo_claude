@@ -1,5 +1,5 @@
 ---
-name: odoo-pr-review
+name: pr-review
 description: >
   Review an Odoo module pull request against SPEC.md for spec compliance,
   Odoo conventions, and code quality. Use this skill when a developer
@@ -126,7 +126,7 @@ Fix: Either revert the code change or update SPEC.md and get approval.
 ## PR Review: {branch-name}
 Reviewing against: SPEC.md v{version}, AC-{nn}
 Odoo version: {16/17/18/19}
-Reviewer: AI (odoo-pr-review skill)
+Reviewer: AI (pr-review skill)
 
 ---
 

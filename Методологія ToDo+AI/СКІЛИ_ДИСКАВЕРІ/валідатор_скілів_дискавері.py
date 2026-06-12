@@ -21,11 +21,23 @@ INITIATION_SKILLS = {
     "facilitation-guide-builder", "discovery-charter-writer", "kickoff-transcript-analyzer",
     "meeting-protocol-builder", "discovery-plan-builder",
 }
-SESSION_SKILLS = {"session-question-builder", "session-client-prep-builder"}
+SESSION_SKILLS = {"session-question-builder", "session-client-prep-builder", "session-transcript-analyzer"}
+CLOSEOUT_SKILLS = {
+    "discovery-scope-mapper", "discovery-gap-analyzer", "discovery-report-builder",
+    "journal-to-tr-builder", "discovery-sow-builder",
+}
+MVP_SKILLS = {
+    "reverse-spec", "spec-writer", "architecture", "scaffolding", "code-dev", "testing", "pr-review",
+}
+TR_SKILLS = {
+    "tr-functional-requirements", "tr-usecases-acceptance", "tr-odoo-tech-design", "tr-review",
+    "tr-registry-update", "tr-effort", "tr-scaffold",
+}
 
 KICKOFF_OK = re.compile(
     r"kickoff[- ](agenda[- ]finalizer|transcript[- ]analyzer|question[- ]builder|survey[- ]protocol)", re.I)
 FORBIDDEN = [r"кік-?оф", r"kickoff_prep", r"клієнт"]  # «клієнт» заборонено в методології — вживати «замовник»
+CLIENT_STATUS_OK = re.compile(r"Погодження клієнт\w*", re.I)  # офіційний статус реєстру ТР — виняток
 VERIF_RE = re.compile(r"верифікац|перед збереженн|самоперевірк|чеклист перед|перевір[ -].{0,40}перед", re.I)
 HINT_RE = re.compile(r"наступний крок", re.I)
 EMPTY_CODE = re.compile(r"(?<!`)``(?!`)")
@@ -44,8 +56,9 @@ def lint(name, text, valid_names):
         issues.append(("🟡", f"name='{mn.group(1).strip()}' не збігається з текою '{name}'"))
     if not re.search(r"^description:", text, re.M):
         issues.append(("🟡", "немає поля description"))
+    fb_text = CLIENT_STATUS_OK.sub("", text)
     for pat in FORBIDDEN:
-        for m in re.finditer(pat, text, re.I):
+        for m in re.finditer(pat, fb_text, re.I):
             issues.append(("🔴", f"заборонений термін «{m.group(0)}»"))
             break
     scrub = KICKOFF_OK.sub("", text)
@@ -87,7 +100,7 @@ def check_dir(skills_dir, valid):
 
 
 def main():
-    valid = INITIATION_SKILLS | SESSION_SKILLS
+    valid = INITIATION_SKILLS | SESSION_SKILLS | CLOSEOUT_SKILLS | MVP_SKILLS | TR_SKILLS
     valid |= {d.name for d in SKILLS_DIR.iterdir() if d.is_dir()}
     if EXTRA_DIR:
         valid |= {d.name for d in EXTRA_DIR.iterdir() if d.is_dir()}

@@ -1,5 +1,5 @@
 ---
-name: odoo-code-dev
+name: code-dev
 description: >
   Implement a specific acceptance criterion from SPEC.md in an Odoo module.
   Use this skill for any implementation task: writing model methods, business

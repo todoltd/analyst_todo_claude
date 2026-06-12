@@ -1,5 +1,5 @@
 ---
-name: odoo-reverse-spec
+name: reverse-spec
 description: >
   Reverse-engineer an existing Odoo module into a structured SPEC.md.
   Use this skill whenever the user wants to document an existing module,

@@ -1,17 +1,12 @@
 ---
-name: odoo-spec-writer
+name: spec-writer
 description: >
-  Build (or refresh) SPEC.md for the MVP build chain by extracting it from an
-  APPROVED ТР (Технічне Рішення, file `ТР_[назва].md`). This is Variant A of the
-  ToDo integration: the ТР is the single source of truth — this skill does NOT
-  author requirements from scratch. It converts the approved ТР into the
-  AI-parseable SPEC.md that odoo-architecture / scaffolding / code-dev / testing /
-  pr-review consume. Triggers on: "ТР → SPEC", "збери SPEC з ТР", "build SPEC.md",
-  "convert ТР to spec", "prepare spec for build", "spec from approved ТР",
-  "підготуй SPEC для білду". Requires ТР status = «Погодження клієнта» / approved.
-  Preserves AC-01 IDs verbatim (never renumbers). If there is no ТР yet, send the
-  author back to the tr-* chain (tr-functional-requirements → tr-usecases-acceptance
-  → tr-odoo-tech-design → tr-review) — do not invent requirements here.
+  Build SPEC.md for the MVP build chain by converting an APPROVED ТР (Технічне Рішення,
+  `ТР_[назва].md`) into the machine-parseable SPEC.md the chain consumes. Variant A: the ТР is
+  the single source of truth — this skill projects requirements, it does not author them, and
+  preserves AC-01 ids verbatim. Triggers on: "ТР → SPEC", "збери SPEC з ТР", "build SPEC.md",
+  "convert ТР to spec", "підготуй SPEC для білду". Requires ТР status «Погодження клієнта» /
+  approved; if there is no ТР, route back to the tr-* chain.
 ---
 
 # Odoo Spec-Writer — ТР → SPEC.md converter (Variant A)
@@ -22,7 +17,7 @@ of truth (Ukrainian prose + tables); `SPEC.md` is its structured projection with
 stable `AC-01` ids so traceability survives all the way to tests and PR review.
 
 > **Position in the chain:** runs once the ТР reaches «Погодження клієнта»
-> (registry: «Перелік технічних рішень»). Output feeds `odoo-architecture`.
+> (registry: «Перелік технічних рішень»). Output feeds `architecture`.
 
 ## Inputs required
 - Approved `ТР_[назва].md` (status «Погодження клієнта» / approved).
@@ -81,7 +76,7 @@ Project the ТР technical-design section into the SPEC `Models` blocks:
 - **Views & menus** table; **Security** matrix (User / Manager) using `odoo-groups.md`.
 - Preserve ToDo conventions: `td.*`, field prefix `td_*`, name mask `<Проект>: …`.
 - Anything the architect must still decide (DB-level structure the ТР left in the
-  empty «АРХІТЕКТУРА» section) → leave for `odoo-architecture`, note under Open questions.
+  empty «АРХІТЕКТУРА» section) → leave for `architecture`, note under Open questions.
 
 ### 5. Scope & open questions
 - `Out of scope`: copy the ТР scope boundaries (що винесено в наступне ТЗ).
@@ -103,7 +98,7 @@ get the new `Since`; existing rows keep theirs. Use the change-block layout from
 `references/spec-template.md`.
 
 ## Hand-off
-> SPEC.md built from approved ТР. Next: `odoo-architecture` (fills the technical
+> SPEC.md built from approved ТР. Next: `architecture` (fills the technical
 > blueprint + AC traceability table the ТР left for the architect).
 
 ## DO / DO NOT

@@ -1,0 +1,19 @@
+{
+  "name": "odoo19-discovery-closeout",
+  "version": "0.1.0",
+  "description": "Методологія блоку ЗАВЕРШЕННЯ ДИСКАВЕРІ для впровадження Odoo 19: вихід із циклу зустрічей у фазу ТР/білд. Консолідує журнал_дискавері у deliverables — scope-маппінг, gap-аналіз (AS-IS→TO-BE), Discovery-звіт замовнику, комерційну пропозицію — і будує міст «журнал → ТР» (секція 1 з origin для ланцюжка tr-*).",
+  "author": {
+    "name": "ToDo"
+  },
+  "keywords": [
+    "odoo",
+    "discovery",
+    "завершення-дискавері",
+    "scope",
+    "gap-аналіз",
+    "discovery-звіт",
+    "ТР",
+    "erp",
+    "business-analysis"
+  ]
+}

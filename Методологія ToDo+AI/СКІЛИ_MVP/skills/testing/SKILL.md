@@ -1,5 +1,5 @@
 ---
-name: odoo-testing
+name: testing
 description: >
   Generate Odoo unit and integration tests from SPEC.md acceptance criteria.
   Use this skill when a developer needs to write tests for a module, verify
