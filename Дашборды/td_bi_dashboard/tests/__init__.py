@@ -11,3 +11,5 @@ from . import test_cache_key
 from . import test_time_intelligence
 from . import test_blend_query
 from . import test_show_as
+from . import test_alert
+from . import test_subscription

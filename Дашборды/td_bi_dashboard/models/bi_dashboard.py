@@ -208,14 +208,66 @@ class TdBiDashboard(models.Model):
         # TODO: AC-28 — глибоке копіювання конфігурації дашборда.
         return super().copy(default=default)
 
-    def render_snapshot(self, filters, as_user):
-        """Серверний знімок даних під with_user(as_user); frozen-посилання/підписки/PDF.
-        Given frozen-посилання/підписка -> вкладення = права отримувача ∧ фільтри (ВИМ-43)."""
+    def render_snapshot(self, filters=None, as_user=None):
+        """Серверний знімок ДАНИХ дашборда ВІД ІМЕНІ отримувача (RLS ∧ фільтри, ВИМ-43).
+
+        Повертає структуру {id, name, pages:[{id,name,widgets:[{id,title,data}]}]}, де data —
+        результат run_query кожного віджета, виконаний with_user(as_user) (права отримувача,
+        без sudo на бізнес-даних). Помилка одного віджета локалізується у його data.error
+        (AC-20/AC-61 — збій не валить увесь знімок). filters (Json) додаються як control_domain.
+
+        Рендер у PDF/XLSX поверх цього знімка — наступний крок (підписки format=pdf/xlsx);
+        формат 'link'/дані-знімок повністю готові тут (AC-26 — без повторних живих запитів
+        у споживача: дані вже у знімку)."""
         self.ensure_one()
-        # TODO: AC-26 — рендер знімка без живих запитів до бізнес-моделей.
-        # TODO: AC-32 — PDF: активні фільтри в колонтитулі, графіки растром, без розрізання.
-        # TODO: AC-47 — TTI/перф-бюджет дашборда.
-        # TODO: AC-48 — одиночний віджет/інтерактив у межах бюджету.
-        # TODO: AC-59 — публікація «для всіх співробітників».
-        # TODO: AC-60 — пункт меню/видимість за групами.
+        user = as_user or self.env.user
+        dash = self.with_user(user)
+        config = dash.get_runtime_config()
+        flat_filter = self._coerce_json(filters, []) if filters else []
+        if isinstance(flat_filter, dict):
+            flat_filter = flat_filter.get('domain') or []
+        pages_out = []
+        for page in config.get('pages', []):
+            widgets_out = []
+            for widget in page.get('widgets', []):
+                data = None
+                if widget.get('dataset_id'):
+                    try:
+                        spec = self._snapshot_widget_spec(widget, flat_filter)
+                        data = self.env['td.bi.dataset'].with_user(user).browse(
+                            widget['dataset_id']).run_query(spec)
+                    except Exception as exc:  # noqa: BLE001 — локалізуємо збій віджета
+                        data = {'error': str(exc)}
+                widgets_out.append({
+                    'id': widget.get('id'), 'title': widget.get('title') or '', 'data': data,
+                })
+            pages_out.append({
+                'id': page.get('id'), 'name': page.get('name') or '', 'widgets': widgets_out,
+            })
+        return {'id': self.id, 'name': config.get('name') or '', 'pages': pages_out}
+
+    def _snapshot_widget_spec(self, widget, flat_filter):
+        """querySpec віджета для знімка: config.data (groupby/measures/aggregates) +
+        фіксовані фільтри підписки як control_domain (плоский список умов = неявне І)."""
+        cfg = self._coerce_json(widget.get('config'), {})
+        data = cfg.get('data') if isinstance(cfg, dict) else None
+        data = data or (cfg if isinstance(cfg, dict) else {})
+        spec = {
+            'groupby': data.get('groupby') or [],
+            'measures': data.get('measures') or [],
+            'aggregates': data.get('aggregates') or [],
+        }
+        if data.get('limit') is not None:
+            spec['limit'] = data['limit']
+        if flat_filter:
+            spec['control_domain'] = list(flat_filter)
+        return spec
+
+    def snapshot_has_data(self, snapshot):
+        """Чи містить знімок хоч один віджет із непорожніми рядками (для only_if_data)."""
+        for page in (snapshot or {}).get('pages', []):
+            for widget in page.get('widgets', []):
+                data = widget.get('data') or {}
+                if isinstance(data, dict) and data.get('rows'):
+                    return True
         return False
