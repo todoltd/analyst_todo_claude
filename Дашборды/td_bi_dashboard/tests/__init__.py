@@ -16,3 +16,4 @@ from . import test_subscription
 from . import test_dashboard_share
 from . import test_materialization
 from . import test_export
+from . import test_share_http
