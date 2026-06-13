@@ -59,13 +59,27 @@ class BiShareController(Controller):
 
     @route('/bi/share/<int:share_id>/<string:token>/export', type='http', auth='public', csrf=False)
     def bi_share_export(self, share_id, token, **kwargs):
-        """Експорт знімка публічного посилання (лише allow_export ∧ base.group_allow_export).  # AC-31, AC-37"""
-        # TODO: AC-31 — експорт лише якщо share.allow_export ∧ право base.group_allow_export; інакше AccessError, файл не формується.
-        # TODO: AC-37 — порожня вибірка → коректний файл лише із заголовками, без падіння.
+        """Експорт ЗАМОРОЖЕНОГО знімка публічного посилання (лише allow_export).  # AC-31, AC-37
+        Рендер із frozen-даних (без живих запитів, AC-29); порожня вибірка -> файл лише
+        із заголовками (AC-37). format=pdf|xlsx (за замовч. xlsx)."""
         share, err = self._get_share_or_invalid(share_id, token)
         if err is not None:
             return err
-        return request.make_response(b'', headers=[('Content-Type', 'application/octet-stream')])
+        if not share.allow_export:
+            return request.not_found()  # AC-31: експорт не дозволено для цього посилання
+        snapshot = share.get_frozen_data()
+        dashboard = share.dashboard_id.sudo()  # рендер зі знімка (sudo лише для виклику, не для даних)
+        fmt = (kwargs.get('format') or 'xlsx').lower()
+        if fmt == 'pdf':
+            content = dashboard.export_pdf(snapshot=snapshot)
+            ctype, fname = 'application/pdf', 'bi_snapshot.pdf'
+        else:
+            content = dashboard.export_xlsx(snapshot=snapshot)
+            ctype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            fname = 'bi_snapshot.xlsx'
+        return request.make_response(content, headers=[
+            ('Content-Type', ctype),
+            ('Content-Disposition', 'attachment; filename="%s"' % fname)])
 
 
 class BiEmbedController(Controller):
@@ -90,14 +104,16 @@ class BiExportController(Controller):
 
     @route('/bi/export/xlsx', type='http', auth='user', methods=['POST'], csrf=False)
     def bi_export_xlsx(self, **kwargs):
-        """Експорт віджета у XLSX (pivot зберігає структуру і числові типи).  # AC-31, AC-36, AC-37"""
-        # TODO: AC-31 — без base.group_allow_export пункт прихований, прямий виклик → AccessError, файл не формується.
-        # TODO: AC-36 — XLSX pivot: структура рядків/колонок і підсумки (GROUPING SETS); числа числовими, валюта форматована.
-        # TODO: AC-37 — порожня вибірка → коректний файл лише із заголовками, без падіння.
+        """Експорт дашборда у XLSX (ВІД ІМЕНІ користувача — RLS).  # AC-31, AC-36, AC-37"""
         if not request.env.user.has_group('base.group_allow_export'):
             raise AccessError(_("У вас немає права на експорт даних."))
+        dashboard = request.env['td.bi.dashboard'].browse(
+            int(kwargs.get('dashboard_id') or 0)).exists()
+        if not dashboard:
+            return request.not_found()
+        content = dashboard.export_xlsx(as_user=request.env.user)
         return request.make_response(
-            b'',
+            content,
             headers=[
                 ('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
                 ('Content-Disposition', 'attachment; filename="bi_export.xlsx"'),
@@ -106,13 +122,16 @@ class BiExportController(Controller):
 
     @route('/bi/export/pdf', type='http', auth='user', methods=['POST'], csrf=False)
     def bi_export_pdf(self, **kwargs):
-        """Експорт дашборда у PDF (активні фільтри в колонтитулі, графіки растром).  # AC-31, AC-32"""
-        # TODO: AC-31 — без base.group_allow_export пункт прихований, прямий виклик → AccessError, файл не формується.
-        # TODO: AC-32 — стан фільтрів у колонтитулі; графіки растром (chart.toBase64Image()); розбивка не ріже віджети.
+        """Експорт дашборда у PDF (ВІД ІМЕНІ користувача — RLS; wkhtmltopdf).  # AC-31, AC-32"""
         if not request.env.user.has_group('base.group_allow_export'):
             raise AccessError(_("У вас немає права на експорт даних."))
+        dashboard = request.env['td.bi.dashboard'].browse(
+            int(kwargs.get('dashboard_id') or 0)).exists()
+        if not dashboard:
+            return request.not_found()
+        content = dashboard.export_pdf(as_user=request.env.user)
         return request.make_response(
-            b'',
+            content,
             headers=[
                 ('Content-Type', 'application/pdf'),
                 ('Content-Disposition', 'attachment; filename="bi_export.pdf"'),

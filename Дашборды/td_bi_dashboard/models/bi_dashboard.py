@@ -271,3 +271,104 @@ class TdBiDashboard(models.Model):
                 if isinstance(data, dict) and data.get('rows'):
                     return True
         return False
+
+    # === Експорт (AC-31/32/36/37) ===
+    @staticmethod
+    def _snapshot_widget_columns(widget):
+        """Колонки віджета знімка: ключі першого рядка без службових (__*) АБО header-only
+        зі стилю/спеки (AC-37 — порожня вибірка дає файл лише із заголовками)."""
+        data = widget.get('data') or {}
+        rows = data.get('rows') or []
+        if rows and isinstance(rows[0], dict):
+            return [k for k in rows[0].keys() if not str(k).startswith('__')
+                    and k not in ('extra_domains',)]
+        return list(data.get('groupby') or []) + list(data.get('measures') or [])
+
+    @staticmethod
+    def _cell_scalar(value):
+        """Скаляр для комірки: m2o [id,label]->label; tuple дати->мітка; інше як є."""
+        if isinstance(value, (list, tuple)):
+            return value[1] if len(value) > 1 else (value[0] if value else '')
+        return value
+
+    def export_xlsx(self, filters=None, as_user=None, snapshot=None):
+        """Рендерить знімок дашборда у XLSX (xlsxwriter): один аркуш на віджет, рядки таблицею.
+        Дані — ВІД ІМЕНІ as_user (RLS) АБО з готового snapshot (frozen-посилання). Порожня
+        вибірка -> аркуш лише із заголовками (AC-37). AC-36 — числа лишаються числами."""
+        self.ensure_one()
+        import io
+        import xlsxwriter
+        snapshot = snapshot or self.render_snapshot(filters, as_user or self.env.user)
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        bold = workbook.add_format({'bold': True})
+        used_names = set()
+        sheet_idx = 0
+        for page in snapshot.get('pages', []):
+            for widget in page.get('widgets', []):
+                sheet_idx += 1
+                raw = (widget.get('title') or 'Widget %d' % sheet_idx)
+                # XLSX-обмеження імені аркуша: <=31 символ, без []:*?/\\, унікальне.
+                name = ''.join(c for c in raw if c not in '[]:*?/\\')[:28] or 'Sheet'
+                base, n = name, 1
+                while name in used_names:
+                    name = ('%s_%d' % (base[:26], n))[:31]
+                    n += 1
+                used_names.add(name)
+                sheet = workbook.add_worksheet(name)
+                cols = self._snapshot_widget_columns(widget)
+                for c, col in enumerate(cols):
+                    sheet.write(0, c, str(col), bold)
+                rows = (widget.get('data') or {}).get('rows') or []
+                for r, row in enumerate(rows, start=1):
+                    for c, col in enumerate(cols):
+                        val = self._cell_scalar(row.get(col))
+                        if isinstance(val, (int, float)):
+                            sheet.write_number(r, c, val)
+                        elif val in (None, False):
+                            sheet.write_blank(r, c, None)
+                        else:
+                            sheet.write_string(r, c, str(val))
+        workbook.close()
+        return output.getvalue()
+
+    def _snapshot_html_doc(self, snapshot):
+        """Самодостатній HTML-документ знімка (для PDF). Активні фільтри в підзаголовку (AC-32)."""
+        parts = ['<!DOCTYPE html><html><head><meta charset="utf-8">',
+                 '<style>body{font-family:sans-serif;font-size:11px}'
+                 'table{border-collapse:collapse;margin:6px 0;width:100%}'
+                 'th,td{border:1px solid #ccc;padding:3px 6px;text-align:left}'
+                 'h1{font-size:16px}h2{font-size:13px}</style></head><body>']
+        parts.append('<h1>%s</h1>' % (snapshot.get('name') or ''))
+        for page in snapshot.get('pages', []):
+            parts.append('<h2>%s</h2>' % (page.get('name') or ''))
+            for widget in page.get('widgets', []):
+                parts.append('<h3>%s</h3>' % (widget.get('title') or ''))
+                cols = self._snapshot_widget_columns(widget)
+                rows = (widget.get('data') or {}).get('rows') or []
+                parts.append('<table><tr>%s</tr>' % ''.join('<th>%s</th>' % c for c in cols))
+                for row in rows:
+                    parts.append('<tr>%s</tr>' % ''.join(
+                        '<td>%s</td>' % (self._cell_scalar(row.get(c)) if row.get(c) not in (None, False) else '')
+                        for c in cols))
+                parts.append('</table>')
+        parts.append('</body></html>')
+        return ''.join(parts)
+
+    def export_pdf(self, filters=None, as_user=None, snapshot=None):
+        """Рендерить знімок дашборда у PDF через wkhtmltopdf (HTML stdin -> PDF stdout).
+        Дані — ВІД ІМЕНІ as_user (RLS) АБО з готового snapshot. AC-32 — таблиці віджетів."""
+        self.ensure_one()
+        import subprocess
+        snapshot = snapshot or self.render_snapshot(filters, as_user or self.env.user)
+        html = self._snapshot_html_doc(snapshot)
+        try:
+            proc = subprocess.run(
+                ['wkhtmltopdf', '-q', '--encoding', 'utf-8', '-', '-'],
+                input=html.encode('utf-8'), capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise UserError(_("Не вдалося згенерувати PDF: %s", exc))
+        if proc.returncode != 0 or not proc.stdout.startswith(b'%PDF'):
+            raise UserError(_("wkhtmltopdf повернув помилку: %s",
+                              (proc.stderr or b'').decode('utf-8', 'ignore')[:300]))
+        return proc.stdout
