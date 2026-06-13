@@ -54,3 +54,58 @@ class TestMaterialization(TransactionCase):
         none2 = self.compiler._find_covering_materialization(
             self.ds, {'groupby': ['code'], 'measures': ['cnt']})
         self.assertFalse(none2, "Непобудований предагрегат (last_refresh порожній) не обслуговує.")
+
+    # --- AC-62: обслуговування з предагрегата ІДЕНТИЧНЕ сирій моделі (serve == live) ---
+    def test_serve_from_preagg_equals_live(self):
+        ds = self.env['td.bi.dataset'].create({
+            'name': 'Serve ds', 'mode': 'model', 'model_id': self.country_im.id,
+            'visibility': 'global', 'cache_ttl': 0,  # без кешу — чисте порівняння
+            'domain': repr([('code', 'in', ['UA', 'PL', 'DE'])])})
+        self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'code', 'path': 'code',
+            'field_type': 'char', 'role': 'dimension'})
+        fc = self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'cnt', 'path': 'id',
+            'field_type': 'integer', 'role': 'measure', 'aggregator': 'count'})
+        self.env['td.bi.measure'].create({
+            'dataset_id': ds.id, 'name': 'cnt', 'field_id': fc.id, 'aggregator': 'count'})
+        mat = self.env['td.bi.materialization'].create({
+            'dataset_id': ds.id, 'dimension_paths': ['code'],
+            'measure_specs': [{'name': 'cnt', 'path': 'id', 'agg': 'count'}],
+            'table_name': 'bi_mat_serve_test'})
+        mat.action_refresh()  # будує фізичну таблицю
+        spec = {'groupby': ['code'], 'measures': ['cnt']}
+        served = ds.run_query(dict(spec))
+        self.assertEqual(served.get('served_from'), 'bi_mat_serve_test',
+                         "Накритий безпечний запит обслужено З ПРЕДАГРЕГАТА.")
+        smap = {r.get('code'): r.get('id:count') for r in served['rows']}
+        # Прибираємо предагрегат -> той самий запит іде на сиру модель (live).
+        mat.unlink()
+        live = ds.run_query(dict(spec))
+        self.assertFalse(live.get('served_from'), "Без предагрегата -> сира модель.")
+        lmap = {r.get('code'): r.get('id:count') for r in live['rows']}
+        self.assertEqual(smap, lmap, "Дані з предагрегата числово ІДЕНТИЧНІ сирій моделі (AC-62).")
+
+    # --- Безпека: поява record rule вимикає обслуговування з предагрегата (лише live) ---
+    def test_serve_gate_respects_rules(self):
+        ds = self.env['td.bi.dataset'].create({
+            'name': 'Serve gate ds', 'mode': 'model', 'model_id': self.country_im.id,
+            'visibility': 'global', 'cache_ttl': 0})
+        self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'code', 'path': 'code',
+            'field_type': 'char', 'role': 'dimension'})
+        mat = self.env['td.bi.materialization'].create({
+            'dataset_id': ds.id, 'dimension_paths': ['code'],
+            'measure_specs': [{'name': 'cnt', 'path': 'id', 'agg': 'count'}],
+            'table_name': 'bi_mat_gate'})
+        spec = {'groupby': ['code'], 'measures': ['cnt']}
+        self.assertTrue(self.compiler._mat_serve_safe(ds, spec, mat),
+                        "Без record rules обслуговування з предагрегата дозволене.")
+        # Поява звужувального правила -> обслуговування з предагрегата вимикається (RLS-варіативність).
+        grp = self.env['res.groups'].create({'name': 'serve gate grp'})
+        self.env['ir.rule'].create({
+            'name': 'serve gate rule', 'model_id': self.country_im.id, 'groups': [(4, grp.id)],
+            'domain_force': repr([('code', '!=', False)]), 'perm_read': True,
+            'perm_write': False, 'perm_create': False, 'perm_unlink': False})
+        self.assertFalse(self.compiler._mat_serve_safe(ds, spec, mat),
+                         "За наявності record rule -> лише live (RLS не обходиться предагрегатом).")

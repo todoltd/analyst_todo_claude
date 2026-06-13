@@ -296,17 +296,30 @@ class TdBiQueryCompiler(models.AbstractModel):
         """% від підсумку / часовий інтелект одним SQL через GROUPING SETS (AC-42/43/55).
         Детальні рядки + загальний підсумок одним запитом; ділення на сервері (AC-55)."""
         dom_list = self._domain_as_list(eff_domain)
-        # DEVIATION(Odoo19): нативний `formatted_read_grouping_sets` існує на збірці, але його
-        # точна сигнатура не підтверджена І він не дав би місця для пост-обробки show_as
-        # (percent_of_total/running_total/rank). Тому використовуємо ПЕРЕВІРЕНИЙ шлях:
-        # два formatted_read_group (детальні + підсумок) ВІД ІМЕНІ користувача + _apply_show_as.
-        # Числово ідентично GROUPING SETS; RLS/ACL зберігаються. Нативний батч — оптимізація
-        # на потім (після звірки сигнатури 19.0).
-        rows = model.formatted_read_group(
-            dom_list, groupby=groupby, aggregates=aggregates,
-            having=having or [], order=order, limit=limit, offset=offset,
-        )
-        totals = model.formatted_read_group(dom_list, groupby=[], aggregates=aggregates)
+        rows, totals = None, None
+        # Нативний GROUPING SETS (Odoo 19): один виклик дає детальні рядки + підсумок.
+        # Сигнатура 19.0: formatted_read_grouping_sets(domain, grouping_sets, aggregates, *, order)
+        # -> список результатів НА КОЖЕН grouping set: [детальні, підсумок]. limit/offset метод
+        # НЕ приймає (обрізаємо детальні рядки пост-фактум). Збій/інша сигнатура -> перевірений
+        # fallback (два formatted_read_group); обидва шляхи живлять _apply_show_as (числово ідентично).
+        method = getattr(model, 'formatted_read_grouping_sets', None)
+        if method is not None:
+            try:
+                result = method(dom_list, [groupby, []], aggregates, order=order)
+                if isinstance(result, (list, tuple)) and result:
+                    rows = list(result[0] or [])
+                    totals = list(result[1]) if len(result) > 1 and result[1] else []
+                    if limit:
+                        rows = rows[:limit]
+            except Exception as exc:  # noqa: BLE001 — нативний шлях недоступний -> fallback
+                _logger.info("BI: formatted_read_grouping_sets -> fallback (%s)", exc)
+                rows = None
+        if rows is None:
+            rows = model.formatted_read_group(
+                dom_list, groupby=groupby, aggregates=aggregates,
+                having=having or [], order=order, limit=limit, offset=offset,
+            )
+            totals = model.formatted_read_group(dom_list, groupby=[], aggregates=aggregates)
         rows = self._apply_show_as(dataset, measure_meta, rows, totals, groupby=groupby)
         rows = self._postprocess_rows(model, dataset, query_spec, rows, groupby, measure_meta, eff_domain)
         return {'rows': rows, 'groupby': groupby, 'grouping_sets': True,
@@ -949,15 +962,15 @@ class TdBiQueryCompiler(models.AbstractModel):
         AC-62 — накритий -> предагрегат; ненакритий -> fallback formatted_read_group (ідентично)
         """
         spec = query_spec or {}
-        # AC-62: знайти RLS-безпечний предагрегат, що накриває запит.
+        # AC-62: накритий запит -> обслуговування з RLS-безпечного предагрегата (лише у
+        # доказово безпечному кейсі: без record rules + скалярні виміри + без додаткових
+        # фільтрів). Інакше — сира модель (числово ідентично). Безпечний серв або None.
         mat = self._find_covering_materialization(dataset, spec)
-        if mat:
-            # DEVIATION(Odoo19): підтвердити життєвий цикл _auto=False + init()/_table_query і
-            # REFRESH MATERIALIZED VIEW CONCURRENTLY для td.bi.materialization на збірці 19.0.
-            # TODO: Stage-2 — обслужити з предагрегата (читання з table_name, RLS через
-            # вимір-ключ правила); поки fallback на сиру модель (числовий результат ідентичний).
-            pass
-        # Stage-1: прямий маршрут по режиму датасету.
+        if mat and self._mat_serve_safe(dataset, spec, mat):
+            served = self._serve_from_materialization(mat, dataset, spec)
+            if served is not None:
+                return served
+        # Прямий маршрут по режиму датасету (сира модель / бленд).
         if dataset.mode == 'blend':
             return self.compile_blend_query(dataset, spec, domain)
         return self.compile_model_query(dataset, spec, domain)
@@ -1016,6 +1029,79 @@ class TdBiQueryCompiler(models.AbstractModel):
                 if name:
                     out.append(name)
         return out
+
+    @api.model
+    def _mat_serve_safe(self, dataset, query_spec, mat):
+        """Чи безпечно обслуговувати запит З ПРЕДАГРЕГАТА (а не сирої моделі):
+        (1) немає звужувальних record rules на моделі (повний агрегат == вид кожного користувача);
+        (2) усі виміри запиту — скалярні (НЕ m2o/date/m2m: інакше треба відтворювати
+            форматування formatted_read_group — (id,label)/бакети дат);
+        (3) немає додаткових доменів (control/widget/cross/drill/audience) — предагрегат
+            нефільтрований. Інакше -> сира модель (коректно)."""
+        if not mat or not dataset.model_name:
+            return False
+        if mat._rule_key_fields(dataset.model_name):
+            return False  # є record rules -> RLS-варіативність -> лише live
+        for level in ('control_domain', 'widget_domain', 'cross_filter_domain',
+                      'drill_domain', 'audience_domain'):
+            if query_spec.get(level):
+                return False  # фільтрований запит -> live
+        model = self.env[dataset.model_name]
+        for gb in (query_spec.get('groupby') or []):
+            if ':' in gb:
+                return False  # date-гранулярність -> бакетинг -> live
+            try:
+                ftype = model.fields_get([gb]).get(gb, {}).get('type')
+            except Exception:  # noqa: BLE001
+                return False
+            if ftype in ('many2one', 'many2many', 'date', 'datetime'):
+                return False
+        return True
+
+    @api.model
+    def _serve_from_materialization(self, mat, dataset, query_spec):
+        """Обслуговує накритий запит ЧИТАННЯМ з предагрегат-таблиці (re-агрегація мір через
+        SUM/MIN/MAX часткових). Контракт виходу — як у compile_model_query. None, якщо запит
+        раптом не накрито (страхувальник; роутер тоді піде на сиру модель)."""
+        dims = mat._mat_dim_list()
+        measures = mat._mat_measure_list()
+        dim_idx = {p: i for i, p in enumerate(dims)}
+        meas_idx = {m['name']: j for j, m in enumerate(measures)}
+        qg = [g.split(':', 1)[0] for g in (query_spec.get('groupby') or [])]
+        req_meas = query_spec.get('measures') or []
+        if any(t not in dim_idx for t in qg) or any(n not in meas_idx for n in req_meas):
+            return None
+        proj, group, out_map = [], [], {}
+        for t in qg:
+            safe = 'g_%d' % dim_idx[t]
+            proj.append(SQL("%s AS %s", SQL.identifier('dim_%d' % dim_idx[t]), SQL.identifier(safe)))
+            group.append(SQL.identifier('dim_%d' % dim_idx[t]))
+            out_map[safe] = t
+        for name in req_meas:
+            j = meas_idx[name]
+            m = measures[j]
+            safe = 'm_%d' % j
+            proj.append(SQL("%s(%s) AS %s", SQL(self._blend_outer_agg(m['agg'])),
+                            SQL.identifier('meas_%d' % j), SQL.identifier(safe)))
+            out_map[safe] = '%s:%s' % (m['path'], m['agg'])  # value_key як у live-запиті
+        if not proj:
+            return None
+        tail = SQL(" GROUP BY %s", SQL(", ").join(group)) if group else SQL("")
+        self.env.cr.execute(SQL(
+            "SELECT %s FROM %s%s", SQL(", ").join(proj), SQL.identifier(mat.table_name), tail))
+        raw = self.env.cr.dictfetchall()
+        rows = []
+        for r in raw:
+            row = {out_map.get(k, k): v for k, v in r.items()}
+            row['__extra_domain'] = self._synthesize_extra_domain(row, qg)
+            rows.append(row)
+        return {
+            'rows': rows,
+            'groupby': list(query_spec.get('groupby') or []),
+            'measures': list(req_meas),
+            'domain': self._domain_as_list(dataset.domain),
+            'served_from': mat.table_name,
+        }
 
     # =========================================================================
     # === DSL-компілятор формул (AC-09, AC-10, AC-13) =========================

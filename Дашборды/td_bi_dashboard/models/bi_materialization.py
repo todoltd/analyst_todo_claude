@@ -150,18 +150,81 @@ class TdBiMaterialization(models.Model):
         # через SQL("CREATE MATERIALIZED VIEW %s AS ...", SQL.identifier(self.table_name)).
 
     def action_refresh(self):
-        """REFRESH MATERIALIZED VIEW CONCURRENTLY; оновлює last_refresh.
-        AC-62 — оновлення предагрегата, з якого роутер обслуговує накриті запити.
-        Stage-1: структурно коректна заглушка з документованим патерном і запасним шляхом.
-        """
+        """Будує/перебудовує фізичний предагрегат (звичайна ТАБЛИЦЯ через CREATE TABLE AS —
+        портативно, без невизначеного на 19.0 лайфциклу MATERIALIZED VIEW/CONCURRENTLY) і
+        оновлює last_refresh. Повний агрегат за доменом датасету (sudo: RLS реапплікується на
+        стороні обслуговування лише у безпечному no-rules-кейсі, AC-62/63)."""
         for record in self.filtered('table_name'):
-            # DEVIATION(Odoo19): підтвердити REFRESH MATERIALIZED VIEW CONCURRENTLY (потребує
-            # UNIQUE-індексу); запасний шлях — REFRESH без CONCURRENTLY (блокує читачів).
-            # TODO: AC-62 (Stage-3) — фактичний REFRESH через odoo.tools.SQL:
-            #   self.env.cr.execute(SQL(
-            #       "REFRESH MATERIALIZED VIEW CONCURRENTLY %s",
-            #       SQL.identifier(record.table_name)))
-            record.last_refresh = fields.Datetime.now()
+            try:
+                record._build_preagg_table()
+                record.last_refresh = fields.Datetime.now()
+            except Exception:  # pragma: no cover — збій побудови не валить cron/інші
+                _logger.exception("BI: побудова предагрегата #%s не вдалась", record.id)
+        return True
+
+    def _mat_dim_list(self):
+        """Упорядкований список полів-вимірів предагрегата (базові, без гранулярності)."""
+        self.ensure_one()
+        paths = self.dimension_paths
+        if isinstance(paths, dict):
+            paths = list(paths.values())
+        return [p.split(':', 1)[0] for p in (paths or []) if isinstance(p, str) and p]
+
+    def _mat_measure_list(self):
+        """Упорядкований список мір предагрегата: [{name, path, agg}]. measure_specs — список
+        dict {name?, path, agg} (name за замовч. '<path>:<agg>' = value_key live-запиту)."""
+        self.ensure_one()
+        specs = self.measure_specs
+        if isinstance(specs, dict):
+            specs = list(specs.values())
+        out = []
+        for s in (specs or []):
+            if isinstance(s, dict) and s.get('path'):
+                agg = s.get('agg') or 'sum'
+                out.append({'name': s.get('name') or ('%s:%s' % (s['path'], agg)),
+                            'path': s['path'], 'agg': agg})
+        return out
+
+    def _mat_agg_sql(self, agg, path):
+        col = SQL.identifier(path)
+        a = (agg or 'sum').lower()
+        if a == 'count':
+            return SQL("COUNT(%s)", col)
+        if a == 'count_distinct':
+            return SQL("COUNT(DISTINCT %s)", col)
+        token = {'sum': 'SUM', 'avg': 'AVG', 'min': 'MIN', 'max': 'MAX'}.get(a, 'SUM')
+        return SQL("%s(%s)", SQL(token), col)
+
+    def _build_preagg_table(self):
+        """CREATE TABLE <table_name> AS <предагрегований SELECT> за доменом датасету (sudo)."""
+        self.ensure_one()
+        dataset = self.dataset_id
+        if not dataset or not dataset.model_name or not self.table_name:
+            return False
+        dims = self._mat_dim_list()
+        measures = self._mat_measure_list()
+        if not dims and not measures:
+            return False
+        model = self.env[dataset.model_name].sudo()
+        select_parts, group_parts = [], []
+        for i, path in enumerate(dims):
+            select_parts.append(SQL("%s AS %s", SQL.identifier(path), SQL.identifier('dim_%d' % i)))
+            group_parts.append(SQL.identifier(path))
+        for j, m in enumerate(measures):
+            select_parts.append(SQL(
+                "%s AS %s", self._mat_agg_sql(m['agg'], m['path']), SQL.identifier('meas_%d' % j)))
+        import ast
+        try:
+            domain = ast.literal_eval(dataset.domain) if dataset.domain else []
+        except (ValueError, SyntaxError):
+            domain = []
+        sub = model._search(domain).subselect()  # повний агрегат за доменом (sudo -> без RLS)
+        table = SQL.identifier(self.table_name)
+        group_sql = SQL(" GROUP BY %s", SQL(", ").join(group_parts)) if group_parts else SQL("")
+        self.env.cr.execute(SQL("DROP TABLE IF EXISTS %s", table))
+        self.env.cr.execute(SQL(
+            "CREATE TABLE %s AS SELECT %s FROM %s AS s WHERE s.id IN %s%s",
+            table, SQL(", ").join(select_parts), SQL.identifier(model._table), sub, group_sql))
         return True
 
     @api.model
