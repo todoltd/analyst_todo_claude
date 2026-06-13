@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.cache — list (readonly; записує/чистить система)            -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_cache_list" model="ir.ui.view">
+        <field name="name">td.bi.cache.list</field>
+        <field name="model">td.bi.cache</field>
+        <field name="arch" type="xml">
+            <list string="Серверний кеш" create="false" edit="false">
+                <field name="cache_key"/>
+                <field name="dataset_id"/>
+                <field name="expires_at"/>
+                <field name="hit_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_cache_search" model="ir.ui.view">
+        <field name="name">td.bi.cache.search</field>
+        <field name="model">td.bi.cache</field>
+        <field name="arch" type="xml">
+            <search string="Пошук у кеші">
+                <field name="cache_key"/>
+                <field name="dataset_id"/>
+                <group>
+                    <filter string="Датасет" name="group_dataset" context="{'group_by': 'dataset_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bi_cache" model="ir.actions.act_window">
+        <field name="name">BI: Кеш</field>
+        <field name="res_model">td.bi.cache</field>
+        <field name="view_mode">list</field>
+        <field name="search_view_id" ref="view_bi_cache_search"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.audit.log — list (readonly; пише система у точках подій)    -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_audit_log_list" model="ir.ui.view">
+        <field name="name">td.bi.audit.log.list</field>
+        <field name="model">td.bi.audit.log</field>
+        <field name="arch" type="xml">
+            <list string="Журнал аудиту" create="false" edit="false">
+                <field name="create_date"/>
+                <field name="event_type"/>
+                <field name="user_id"/>
+                <field name="dashboard_id"/>
+                <field name="dataset_id"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_audit_log_form" model="ir.ui.view">
+        <field name="name">td.bi.audit.log.form</field>
+        <field name="model">td.bi.audit.log</field>
+        <field name="arch" type="xml">
+            <form string="Подія аудиту" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="event_type"/>
+                            <field name="user_id"/>
+                            <field name="create_date"/>
+                        </group>
+                        <group>
+                            <field name="dashboard_id"/>
+                            <field name="dataset_id"/>
+                        </group>
+                    </group>
+                    <group string="Деталі події">
+                        <field name="payload" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_bi_audit_log_search" model="ir.ui.view">
+        <field name="name">td.bi.audit.log.search</field>
+        <field name="model">td.bi.audit.log</field>
+        <field name="arch" type="xml">
+            <search string="Пошук у журналі аудиту">
+                <field name="user_id"/>
+                <field name="dashboard_id"/>
+                <field name="dataset_id"/>
+                <filter string="Перегляд" name="ev_view" domain="[('event_type', '=', 'view')]"/>
+                <filter string="Експорт" name="ev_export" domain="[('event_type', '=', 'export')]"/>
+                <filter string="SQL" name="ev_sql" domain="[('event_type', '=', 'sql_run')]"/>
+                <group>
+                    <filter string="Тип події" name="group_event" context="{'group_by': 'event_type'}"/>
+                    <filter string="Користувач" name="group_user" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_bi_audit_log" model="ir.actions.act_window">
+        <field name="name">BI: Аудит</field>
+        <field name="res_model">td.bi.audit.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_bi_audit_log_search"/>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.materialization — list+form (адмін; предагрегати)           -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_materialization_list" model="ir.ui.view">
+        <field name="name">td.bi.materialization.list</field>
+        <field name="model">td.bi.materialization</field>
+        <field name="arch" type="xml">
+            <list string="Матеріалізації">
+                <field name="dataset_id"/>
+                <field name="table_name"/>
+                <field name="granularity"/>
+                <field name="is_rls_safe"/>
+                <field name="last_refresh"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_materialization_form" model="ir.ui.view">
+        <field name="name">td.bi.materialization.form</field>
+        <field name="model">td.bi.materialization</field>
+        <field name="arch" type="xml">
+            <form string="Матеріалізація">
+                <header>
+                    <!-- AC-62 — оновлення предагрегата (REFRESH MATERIALIZED VIEW) -->
+                    <button name="action_refresh" type="object" string="Оновити"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="RLS-небезпечно" bg_color="text-bg-danger"
+                            invisible="is_rls_safe"/>
+                    <group>
+                        <group>
+                            <field name="dataset_id"/>
+                            <field name="table_name"/>
+                            <field name="granularity"/>
+                            <field name="is_rls_safe" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="refresh_cron_id"/>
+                            <field name="last_refresh" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Виміри предагрегата">
+                        <field name="dimension_paths" nolabel="1"/>
+                    </group>
+                    <group string="Міри предагрегата">
+                        <field name="measure_specs" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bi_materialization" model="ir.actions.act_window">
+        <field name="name">BI: Матеріалізація</field>
+        <field name="res_model">td.bi.materialization</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

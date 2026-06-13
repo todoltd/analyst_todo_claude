@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ir.actions.report PDF дашборда (AC-32: фільтри в колонтитулі, графіки растром, без розрізання) -->
+    <record id="action_report_bi_dashboard" model="ir.actions.report">
+        <field name="name">BI: Дашборд (PDF)</field>
+        <field name="model">td.bi.dashboard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">td_bi_dashboard.bi_dashboard_report_main</field>
+        <field name="report_file">td_bi_dashboard.bi_dashboard_report_main</field>
+        <field name="paperformat_id" ref="td_bi_dashboard.paperformat_bi_dashboard"/>
+        <field name="print_report_name">'BI - %s' % (object.name or '')</field>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+</odoo>

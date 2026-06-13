@@ -1,0 +1,40 @@
+# -*- coding: utf-8 -*-
+{
+    'name': 'BI: Дашборди (BI-платформа)',
+    'version': '19.0.1.0.0',
+    'category': 'Technical',
+    'summary': 'Нативна BI-платформа всередині Odoo 19: датасети, бленди, дашборди, публікація — успадковує безпеку Odoo (ACL/record rules) автоматично.',
+    'description': """Модуль td_bi_dashboard — повноцінна BI-платформа всередині Odoo 19, функціонально співставна з Looker Studio / Power BI. Бізнес-користувач без програмування під'єднується до будь-якої моделі Odoo, будує датасети з фільтрами/агрегаціями/обчислюваними полями, об'єднує моделі (бленд), конструює інтерактивні дашборди і ділиться ними. Виконується всередині Odoo і успадковує модель безпеки Odoo автоматично (ACL, record rules, groups=, мультикомпанія) — без дублювання налаштувань.""",
+    'author': 'ToDo',
+    'website': 'https://todo.ltd',
+    'license': 'LGPL-3',
+    'depends': ['base', 'web', 'mail'],
+    'data': [
+        'security/td_bi_dashboard_security.xml',
+        'security/ir.model.access.csv',
+        'data/bi_paperformat.xml',
+        'data/bi_cron.xml',
+        'data/mail_template_data.xml',
+        'data/bi_theme_data.xml',
+        'report/bi_dashboard_templates.xml',
+        'report/bi_dashboard_report.xml',
+        'views/bi_dashboard_action.xml',
+        'views/bi_dataset_views.xml',
+        'views/bi_dashboard_views.xml',
+        'views/bi_subscription_alert_views.xml',
+        'views/bi_admin_views.xml',
+        'views/res_config_settings_views.xml',
+        'views/bi_menus.xml',
+    ],
+    'demo': [
+        'demo/bi_demo.xml',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'td_bi_dashboard/static/src/**/*',
+        ],
+    },
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+}

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- Кореневе меню застосунку «BI: Дашборди» (group_bi_user)           -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_bi_root"
+              name="BI: Дашборди"
+              sequence="90"
+              groups="td_bi_dashboard.group_bi_user"
+              web_icon="td_bi_dashboard,static/description/icon.png"/>
+
+    <!-- ── Каталог (жива клієнтська дія: каталог опублікованих + рендер дашборда;
+            домашня сторінка модуля для перегляду). Картка «Відкрити» -> onOpenDashboard. ── -->
+    <menuitem id="menu_bi_catalog"
+              name="BI: Каталог"
+              parent="menu_bi_root"
+              action="dashboard_action"
+              sequence="10"
+              groups="td_bi_dashboard.group_bi_user"/>
+
+    <!-- ── Керування (kanban/форма CRUD дашбордів; designer редагує конфігурацію) ── -->
+    <menuitem id="menu_bi_manage"
+              name="BI: Керування"
+              parent="menu_bi_root"
+              action="action_bi_dashboard"
+              sequence="15"
+              groups="td_bi_dashboard.group_bi_designer"/>
+
+    <!-- ── Датасети (конструктор; designer) ── -->
+    <menuitem id="menu_bi_dataset"
+              name="BI: Датасети"
+              parent="menu_bi_root"
+              action="action_bi_dataset"
+              sequence="20"
+              groups="td_bi_dashboard.group_bi_designer"/>
+
+    <!-- ── Розсилки (підписки/алерти; user) ── -->
+    <menuitem id="menu_bi_distribution"
+              name="BI: Розсилки"
+              parent="menu_bi_root"
+              sequence="30"
+              groups="td_bi_dashboard.group_bi_user"/>
+
+    <menuitem id="menu_bi_subscription"
+              name="Підписки"
+              parent="menu_bi_distribution"
+              action="action_bi_subscription"
+              sequence="10"
+              groups="td_bi_dashboard.group_bi_user"/>
+
+    <menuitem id="menu_bi_alert"
+              name="Алерти"
+              parent="menu_bi_distribution"
+              action="action_bi_alert"
+              sequence="20"
+              groups="td_bi_dashboard.group_bi_user"/>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- Адміністрування (group_bi_admin)                                  -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_bi_admin_root"
+              name="Адміністрування"
+              parent="menu_bi_root"
+              sequence="90"
+              groups="td_bi_dashboard.group_bi_admin"/>
+
+    <menuitem id="menu_bi_audit_log"
+              name="Аудит"
+              parent="menu_bi_admin_root"
+              action="action_bi_audit_log"
+              sequence="10"
+              groups="td_bi_dashboard.group_bi_admin"/>
+
+    <menuitem id="menu_bi_cache"
+              name="Кеш"
+              parent="menu_bi_admin_root"
+              action="action_bi_cache"
+              sequence="20"
+              groups="td_bi_dashboard.group_bi_admin"/>
+
+    <menuitem id="menu_bi_materialization"
+              name="Матеріалізація"
+              parent="menu_bi_admin_root"
+              action="action_bi_materialization"
+              sequence="30"
+              groups="td_bi_dashboard.group_bi_admin"/>
+
+    <menuitem id="menu_bi_config_settings"
+              name="Налаштування"
+              parent="menu_bi_admin_root"
+              action="action_bi_config_settings"
+              sequence="40"
+              groups="td_bi_dashboard.group_bi_admin"/>
+
+</odoo>

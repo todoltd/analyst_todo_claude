@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="td_bi_dashboard.BiDashboardAction">
+        <div class="o_bi_dashboard o_action h-100 d-flex flex-column">
+
+            <!-- Стан завантаження -->
+            <div t-if="state.isLoading" class="o_bi_dashboard_loading flex-grow-1 d-flex align-items-center justify-content-center">
+                <span>Завантаження…</span>
+            </div>
+
+            <!-- Помилка завантаження кореневого конфігу -->
+            <div t-elif="state.error" class="o_bi_dashboard_error flex-grow-1 d-flex align-items-center justify-content-center">
+                <div class="alert alert-warning text-center" role="alert">
+                    <div t-esc="state.error"/>
+                </div>
+            </div>
+
+            <!-- Режим каталогу: id дашборда не задано -->
+            <div t-elif="!state.dashboardId" class="o_bi_dashboard_catalog flex-grow-1 p-3 overflow-auto">
+                <h2 class="mb-3">BI Дашборди</h2>
+                <div t-if="!state.catalog.length" class="text-muted">
+                    Немає опублікованих дашбордів.
+                </div>
+                <div t-else="" class="o_bi_catalog_grid">
+                    <div t-foreach="state.catalog" t-as="dash" t-key="dash.id" class="o_bi_catalog_card card">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title" t-esc="dash.name"/>
+                            <p class="card-text text-muted flex-grow-1" t-esc="dash.description or ''"/>
+                            <button class="btn btn-primary mt-2 align-self-start"
+                                    t-on-click="() => this.onOpenDashboard(dash.id)">
+                                Відкрити
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Режим перегляду дашборда -->
+            <t t-else="">
+                <!-- Заголовок + перемикач сторінок -->
+                <div class="o_bi_dashboard_header d-flex align-items-center justify-content-between p-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-light" t-on-click="() => this.backToCatalog()" title="До каталогу">
+                            <i class="fa fa-arrow-left"/>
+                        </button>
+                        <h2 class="o_bi_dashboard_title m-0">
+                            <span t-out="state.config.name or 'BI Дашборд'"/>
+                        </h2>
+                    </div>
+                    <div t-if="pages.length > 1" class="o_bi_dashboard_pages btn-group">
+                        <button t-foreach="pages" t-as="page" t-key="page.id"
+                                class="btn btn-sm"
+                                t-att-class="page.id === state.activePageId ? 'btn-primary' : 'btn-secondary'"
+                                t-on-click="() => this.onSelectPage(page.id)">
+                            <span t-esc="page.name"/>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Панель контролів -->
+                <ControlBar t-if="controls.length" controls="controls"/>
+
+                <!-- Канва поточної сторінки -->
+                <div class="o_bi_dashboard_canvas flex-grow-1 p-3 overflow-auto">
+                    <DashboardCanvas t-if="activePage" page="activePage"/>
+                    <p t-else="" class="text-muted">Дашборд не містить сторінок.</p>
+                </div>
+            </t>
+
+        </div>
+    </t>
+
+</templates>

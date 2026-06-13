@@ -1,0 +1,693 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================================================================== -->
+    <!-- Категорія модуля BI                                                   -->
+    <!-- ===================================================================== -->
+    <record id="module_category_bi" model="ir.module.category">
+        <field name="name">Business Intelligence (BI)</field>
+        <field name="description">Дашборди, датасети, публікація та аналітика BI ToDo</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- Odoo 19: групи категоризуються через res.groups.privilege (поле privilege_id),
+         а не через category_id на res.groups (вилучено у v19). Privilege несе category_id. -->
+    <record id="privilege_bi" model="res.groups.privilege">
+        <field name="name">BI: Дашборди</field>
+        <field name="category_id" ref="module_category_bi"/>
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- ===================================================================== -->
+    <!-- Групи доступу (implied-ланцюг: user → designer → admin)               -->
+    <!-- §Security SPEC: Custom groups defined by this module                  -->
+    <!-- ===================================================================== -->
+
+    <!-- group_bi_user: перегляд опублікованих, особисті закладки, експорт -->
+    <record id="group_bi_user" model="res.groups">
+        <field name="name">Глядач</field>
+        <field name="privilege_id" ref="privilege_bi"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Перегляд опублікованих дашбордів, особисті закладки, експорт за base.group_allow_export.</field>
+    </record>
+
+    <!-- group_bi_designer: CRUD своїх датасетів/дашбордів, DSL, бленди -->
+    <record id="group_bi_designer" model="res.groups">
+        <field name="name">Дизайнер</field>
+        <field name="privilege_id" ref="privilege_bi"/>
+        <field name="implied_ids" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="comment">CRUD власних датасетів/дашбордів, DSL-формули, бленди, шаринг своїх об'єктів.</field>
+    </record>
+
+    <!-- group_bi_admin: усі об'єкти, SQL-датасети, публічні посилання, теми, аудит -->
+    <record id="group_bi_admin" model="res.groups">
+        <field name="name">Адміністратор</field>
+        <field name="privilege_id" ref="privilege_bi"/>
+        <field name="implied_ids" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="comment">Усі об'єкти, SQL-датасети, публічні посилання, теми, налаштування, аудит.</field>
+    </record>
+
+    <!-- ===================================================================== -->
+    <!-- Record rules (§Security SPEC §2.6.3)                                   -->
+    <!--                                                                        -->
+    <!-- Семантика Odoo 19 (SPEC §1498):                                        -->
+    <!--   * global rule (без <groups>) застосовується ДО ВСІХ і AND-иться     -->
+    <!--     з усім; group-rule (з <groups>) розширює (OR) у межах своєї групи. -->
+    <!--   * Тому правила, які мають ОБМЕЖУВАТИ (record-level "лише свої"),     -->
+    <!--     адресуються КОНКРЕТНІЙ групі через <groups>; адмінське "усе"       -->
+    <!--     додається OR-правилом для group_bi_admin.                          -->
+    <!--   * Дані бізнес-моделей читаються через ORM від імені користувача      -->
+    <!--     (без sudo) — RLS самих джерел даних застосовує сам Odoo;           -->
+    <!--     ці правила керують доступом ЛИШЕ до конфіг-об'єктів td.bi.*.       -->
+    <!--   * Доступні змінні домену: user, company_id, company_ids, time.      -->
+    <!-- ===================================================================== -->
+
+    <!-- ===================== td.bi.dashboard ============================== -->
+
+    <!-- AC-19 / AC-20 / AC-25 / AC-59 — td.bi.dashboard (read):
+         глядач бачить дашборд, якщо:
+           owner_id = user
+           OR існує рядок td.bi.dashboard.access на нього (user_id = user)
+           OR існує рядок access з групою, у якій він складається
+              (group_id IN user.group_ids — published-global = base.group_user, AC-59)
+         ∧ мультикомпанія: company_ids порожнє (глобальний) АБО перетин з company_ids.
+         Правило адресоване group_bi_user (read-only): editor/manager-операції
+         виконуються designer-правилом нижче (OR-розширення). -->
+    <record id="rule_dashboard_read" model="ir.rule">
+        <field name="name">BI Дашборд: читання (власник / доступ / published-global ∧ company)</field>
+        <field name="model_id" ref="model_td_bi_dashboard"/>
+        <field name="domain_force">[
+            '&amp;',
+                '|', '|',
+                    ('owner_id', '=', user.id),
+                    ('access_ids.user_id', '=', user.id),
+                    ('access_ids.group_id', 'in', user.group_ids.ids),
+                '|',
+                    ('company_ids', '=', False),
+                    ('company_ids', 'in', company_ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- AC-25 / AC-28 / AC-59 / AC-60 — td.bi.dashboard (CUD для designer):
+         editor редагує ВМІСТ (сторінки/віджети/контроли через зв'язки),
+         manager керує доступами/публікацією/станом (state, access_ids).
+         Право на CUD має власник АБО носій рядка access свого дашборда
+         (editor/manager роль перевіряється бізнес-логікою при write на
+         чутливі поля state/access — AC-59 «без прав власника/editor →
+         AccessError»). Read успадковується від rule_dashboard_read (OR). -->
+    <record id="rule_dashboard_designer_cud" model="ir.rule">
+        <field name="name">BI Дашборд: CUD власних (editor/manager)</field>
+        <field name="model_id" ref="model_td_bi_dashboard"/>
+        <field name="domain_force">[
+            '|',
+                ('owner_id', '=', user.id),
+                ('access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- AC-19 / AC-22 — td.bi.dashboard: адміністратор BI бачить/керує усіма
+         (потрібно для «подивитися як користувач», аудиту, керування). -->
+    <record id="rule_dashboard_admin_all" model="ir.rule">
+        <field name="name">BI Дашборд: адміністратор — усі</field>
+        <field name="model_id" ref="model_td_bi_dashboard"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.dashboard.access ======================= -->
+
+    <!-- AC-19 / AC-25 / AC-59 — рядки доступу наслідують доступ від батька:
+         глядач читає рядки access ЛИШЕ своїх видимих дашбордів. Видимість
+         батька-дашборда вже звужена rule_dashboard_read, тож проходимо за
+         тим самим OR-предикатом по dashboard_id.* (наслідування за зв'язком). -->
+    <record id="rule_dashboard_access_read" model="ir.rule">
+        <field name="name">BI Доступ дашборда: read за батьком</field>
+        <field name="model_id" ref="model_td_bi_dashboard_access"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- AC-59 — manager-операції з доступами: designer керує рядками access
+         ЛИШЕ власних дашбордів (публікація «для всіх» = (un)link рядка
+         з group_id=base.group_user; idempotent-логіка — у моделі). -->
+    <record id="rule_dashboard_access_designer_cud" model="ir.rule">
+        <field name="name">BI Доступ дашборда: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_dashboard_access"/>
+        <field name="domain_force">[
+            '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_dashboard_access_admin_all" model="ir.rule">
+        <field name="name">BI Доступ дашборда: адміністратор — усі</field>
+        <field name="model_id" ref="model_td_bi_dashboard_access"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- =============== Inheriting-моделі дашборда (за зв'язком) ============ -->
+    <!-- SPEC §1497: page / widget / control / control.mapping / version
+         наслідують доступ від батьківського дашборда. Реалізуємо як OR-пару
+         правил на групу: глядач читає за батьком; designer CUD на власних.
+         Адмін (через implied) проходить designer-правилом + admin-правилами
+         батька; окреме admin-«усе» не потрібне для дочірніх. -->
+
+    <!-- td.bi.dashboard.page → dashboard_id -->
+    <record id="rule_page_read" model="ir.rule">
+        <field name="name">BI Сторінка: read за батьком-дашбордом</field>
+        <field name="model_id" ref="model_td_bi_dashboard_page"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_page_designer_cud" model="ir.rule">
+        <field name="name">BI Сторінка: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_dashboard_page"/>
+        <field name="domain_force">[
+            '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.widget → page_id.dashboard_id (AC-20/AC-52 деградація per-віджет
+         керується бізнес-логікою; record rule — лише видимість конфігу) -->
+    <record id="rule_widget_read" model="ir.rule">
+        <field name="name">BI Віджет: read за батьком-дашбордом</field>
+        <field name="model_id" ref="model_td_bi_widget"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('page_id.dashboard_id.owner_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.user_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_widget_designer_cud" model="ir.rule">
+        <field name="name">BI Віджет: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_widget"/>
+        <field name="domain_force">[
+            '|',
+                ('page_id.dashboard_id.owner_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.control → dashboard_id (scope=dashboard) АБО page_id.dashboard_id
+         (scope=page). Контроль належить рівно одному скоупу — OR покриває обидва. -->
+    <record id="rule_control_read" model="ir.rule">
+        <field name="name">BI Контроль: read за батьком-дашбордом</field>
+        <field name="model_id" ref="model_td_bi_control"/>
+        <field name="domain_force">[
+            '|', '|', '|', '|', '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+                ('page_id.dashboard_id.owner_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.user_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_control_designer_cud" model="ir.rule">
+        <field name="name">BI Контроль: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_control"/>
+        <field name="domain_force">[
+            '|', '|', '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('page_id.dashboard_id.owner_id', '=', user.id),
+                ('page_id.dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.control.mapping → control_id (наслідує від контролю → дашборда).
+         AC-57: автосопоставлення/ручне перевизначення per-датасет. -->
+    <record id="rule_control_mapping_read" model="ir.rule">
+        <field name="name">BI Мапінг контролю: read за контролем-батьком</field>
+        <field name="model_id" ref="model_td_bi_control_mapping"/>
+        <field name="domain_force">[
+            '|', '|', '|', '|', '|',
+                ('control_id.dashboard_id.owner_id', '=', user.id),
+                ('control_id.dashboard_id.access_ids.user_id', '=', user.id),
+                ('control_id.dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+                ('control_id.page_id.dashboard_id.owner_id', '=', user.id),
+                ('control_id.page_id.dashboard_id.access_ids.user_id', '=', user.id),
+                ('control_id.page_id.dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_control_mapping_designer_cud" model="ir.rule">
+        <field name="name">BI Мапінг контролю: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_control_mapping"/>
+        <field name="domain_force">[
+            '|', '|', '|',
+                ('control_id.dashboard_id.owner_id', '=', user.id),
+                ('control_id.dashboard_id.access_ids.user_id', '=', user.id),
+                ('control_id.page_id.dashboard_id.owner_id', '=', user.id),
+                ('control_id.page_id.dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.dashboard.version → dashboard_id. AC-28: глядач читає історію
+         версій своїх видимих дашбордів; запис (snapshot/rollback) — designer
+         editor на власних. -->
+    <record id="rule_version_read" model="ir.rule">
+        <field name="name">BI Версія: read за батьком-дашбордом</field>
+        <field name="model_id" ref="model_td_bi_dashboard_version"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_version_designer_cud" model="ir.rule">
+        <field name="name">BI Версія: CUD на власних дашбордах</field>
+        <field name="model_id" ref="model_td_bi_dashboard_version"/>
+        <field name="domain_force">[
+            '|',
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.dataset ================================ -->
+
+    <!-- AC-21 / AC-65 / US-04 — td.bi.dataset (read) за visibility:
+         private  → owner_id = user
+         groups   → user входить у group_ids датасету
+         global   → усі
+         ∧ мультикомпанія за company_ids (порожнє = глобальний, інакше перетин).
+         Дані самих джерел читаються від імені користувача через ORM (RLS Odoo);
+         це правило керує доступом ЛИШЕ до конфіг-сутності датасету. -->
+    <record id="rule_dataset_read_visibility" model="ir.rule">
+        <field name="name">BI Датасет: читання за visibility ∧ company</field>
+        <field name="model_id" ref="model_td_bi_dataset"/>
+        <field name="domain_force">[
+            '&amp;',
+                '|', '|',
+                    ('owner_id', '=', user.id),
+                    '&amp;', ('visibility', '=', 'groups'), ('group_ids', 'in', user.group_ids.ids),
+                    ('visibility', '=', 'global'),
+                '|',
+                    ('company_ids', '=', False),
+                    ('company_ids', 'in', company_ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- US-01 / US-02 — td.bi.dataset: дизайнер CRUD лише своїх. -->
+    <record id="rule_dataset_designer_own" model="ir.rule">
+        <field name="name">BI Датасет: дизайнер — CRUD своїх</field>
+        <field name="model_id" ref="model_td_bi_dataset"/>
+        <field name="domain_force">[('owner_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- AC-50 — td.bi.dataset: адміністратор — усі (вкл. SQL-датасети, mode=sql:
+         ACL на sql_query-редагування — у моделі/в'юшках; тут — видимість усіх). -->
+    <record id="rule_dataset_admin_all" model="ir.rule">
+        <field name="name">BI Датасет: адміністратор — усі</field>
+        <field name="model_id" ref="model_td_bi_dataset"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- =========== Inheriting-моделі датасету (за зв'язком) =============== -->
+    <!-- SPEC §1497: field / join / join.key / measure / parameter наслідують
+         доступ від батьківського датасету (read за visibility; CUD у власника). -->
+
+    <!-- td.bi.dataset.field → dataset_id -->
+    <record id="rule_dataset_field_read" model="ir.rule">
+        <field name="name">BI Поле датасету: read за батьком-датасетом</field>
+        <field name="model_id" ref="model_td_bi_dataset_field"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dataset_id.owner_id', '=', user.id),
+                '&amp;', ('dataset_id.visibility', '=', 'groups'),
+                         ('dataset_id.group_ids', 'in', user.group_ids.ids),
+                ('dataset_id.visibility', '=', 'global'),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_dataset_field_designer_own" model="ir.rule">
+        <field name="name">BI Поле датасету: CUD на власних датасетах</field>
+        <field name="model_id" ref="model_td_bi_dataset_field"/>
+        <field name="domain_force">[('dataset_id.owner_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.dataset.join → dataset_id -->
+    <record id="rule_dataset_join_read" model="ir.rule">
+        <field name="name">BI JOIN датасету: read за батьком-датасетом</field>
+        <field name="model_id" ref="model_td_bi_dataset_join"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dataset_id.owner_id', '=', user.id),
+                '&amp;', ('dataset_id.visibility', '=', 'groups'),
+                         ('dataset_id.group_ids', 'in', user.group_ids.ids),
+                ('dataset_id.visibility', '=', 'global'),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_dataset_join_designer_own" model="ir.rule">
+        <field name="name">BI JOIN датасету: CUD на власних датасетах</field>
+        <field name="model_id" ref="model_td_bi_dataset_join"/>
+        <field name="domain_force">[('dataset_id.owner_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.dataset.join.key → join_id.dataset_id -->
+    <record id="rule_dataset_join_key_read" model="ir.rule">
+        <field name="name">BI Ключ JOIN: read за батьком-датасетом</field>
+        <field name="model_id" ref="model_td_bi_dataset_join_key"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('join_id.dataset_id.owner_id', '=', user.id),
+                '&amp;', ('join_id.dataset_id.visibility', '=', 'groups'),
+                         ('join_id.dataset_id.group_ids', 'in', user.group_ids.ids),
+                ('join_id.dataset_id.visibility', '=', 'global'),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_dataset_join_key_designer_own" model="ir.rule">
+        <field name="name">BI Ключ JOIN: CUD на власних датасетах</field>
+        <field name="model_id" ref="model_td_bi_dataset_join_key"/>
+        <field name="domain_force">[('join_id.dataset_id.owner_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.measure → dataset_id -->
+    <record id="rule_measure_read" model="ir.rule">
+        <field name="name">BI Міра: read за батьком-датасетом</field>
+        <field name="model_id" ref="model_td_bi_measure"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dataset_id.owner_id', '=', user.id),
+                '&amp;', ('dataset_id.visibility', '=', 'groups'),
+                         ('dataset_id.group_ids', 'in', user.group_ids.ids),
+                ('dataset_id.visibility', '=', 'global'),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_measure_designer_own" model="ir.rule">
+        <field name="name">BI Міра: CUD на власних датасетах</field>
+        <field name="model_id" ref="model_td_bi_measure"/>
+        <field name="domain_force">[('dataset_id.owner_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- td.bi.parameter → dataset_id (датасет-рівень) АБО dashboard_id
+         (дашборд-рівень). Параметр належить одному скоупу — OR покриває. -->
+    <record id="rule_parameter_read" model="ir.rule">
+        <field name="name">BI Параметр: read за батьком (датасет/дашборд)</field>
+        <field name="model_id" ref="model_td_bi_parameter"/>
+        <field name="domain_force">[
+            '|', '|', '|', '|', '|',
+                ('dataset_id.owner_id', '=', user.id),
+                '&amp;', ('dataset_id.visibility', '=', 'groups'),
+                         ('dataset_id.group_ids', 'in', user.group_ids.ids),
+                ('dataset_id.visibility', '=', 'global'),
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+                ('dashboard_id.access_ids.group_id', 'in', user.group_ids.ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_parameter_designer_own" model="ir.rule">
+        <field name="name">BI Параметр: CUD на власних батьках</field>
+        <field name="model_id" ref="model_td_bi_parameter"/>
+        <field name="domain_force">[
+            '|', '|',
+                ('dataset_id.owner_id', '=', user.id),
+                ('dashboard_id.owner_id', '=', user.id),
+                ('dashboard_id.access_ids.user_id', '=', user.id),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.dashboard.state ======================== -->
+
+    <!-- AC-16 — td.bi.dashboard.state (особиста закладка/стан):
+         CUD ЛИШЕ власнику запису (user_id = user.id). Авторські СПІЛЬНІ стани
+         (user_id порожній — personal_default дашборда, виставлений дизайнером)
+         доступні УСІМ на ЧИТАННЯ, але користувач не може їх змінювати/видаляти
+         (write/create/unlink — лише на своїх записах). Тому read-предикат
+         ширший за write/create/unlink: розділяємо на два правила. -->
+    <record id="rule_dashboard_state_read" model="ir.rule">
+        <field name="name">BI Стан/закладка: read власних + авторських спільних</field>
+        <field name="model_id" ref="model_td_bi_dashboard_state"/>
+        <field name="domain_force">[
+            '|',
+                ('user_id', '=', user.id),
+                ('user_id', '=', False),
+        ]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_dashboard_state_own_cud" model="ir.rule">
+        <field name="name">BI Стан/закладка: CUD лише власних записів</field>
+        <field name="model_id" ref="model_td_bi_dashboard_state"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+    <!-- AC-16 — group_bi_admin додатково керує авторськими спільними станами
+         (user_id порожній): повний доступ для адміністратора. -->
+    <record id="rule_dashboard_state_admin_all" model="ir.rule">
+        <field name="name">BI Стан/закладка: адміністратор — усі (вкл. спільні)</field>
+        <field name="model_id" ref="model_td_bi_dashboard_state"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.dashboard.share ======================== -->
+
+    <!-- AC-24 / AC-26 / AC-29 — публічне (frozen) посилання створює/керує ЛИШЕ
+         group_bi_admin (ACL дає C/U/D тільки admin). Designer бачить (read)
+         лише СВОЇ посилання; group_bi_user — без доступу (ACL = 0).
+         Read-only правило для designer. -->
+    <record id="rule_dashboard_share_designer_read_own" model="ir.rule">
+        <field name="name">BI Публічне посилання: дизайнер — read лише своїх</field>
+        <field name="model_id" ref="model_td_bi_dashboard_share"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_designer'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- AC-26 / AC-30 — td.bi.dashboard.share: адміністратор — повний доступ
+         (створення/відкликання посилань). -->
+    <record id="rule_dashboard_share_admin_all" model="ir.rule">
+        <field name="name">BI Публічне посилання: адміністратор — усі</field>
+        <field name="model_id" ref="model_td_bi_dashboard_share"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.subscription =========================== -->
+
+    <!-- AC-33 / AC-61 — підписки: усі групи CRUD лише СВОЇХ (create_uid = user).
+         Розсилка рендериться під with_user(recipient) у бізнес-логіці. -->
+    <record id="rule_subscription_own" model="ir.rule">
+        <field name="name">BI Підписка: CRUD лише своїх</field>
+        <field name="model_id" ref="model_td_bi_subscription"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ===================== td.bi.alert / td.bi.alert.log ================ -->
+
+    <!-- AC-35 — алерти: усі групи CRUD лише СВОЇХ (create_uid = user). -->
+    <record id="rule_alert_own" model="ir.rule">
+        <field name="name">BI Алерт: CRUD лише своїх</field>
+        <field name="model_id" ref="model_td_bi_alert"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- AC-35 — журнал алерта: user/designer читають ЛИШЕ свої (без W/C/D —
+         пише система). Адмін читає усі (окреме правило-OR). -->
+    <record id="rule_alert_log_own" model="ir.rule">
+        <field name="name">BI Журнал алерта: read лише своїх</field>
+        <field name="model_id" ref="model_td_bi_alert_log"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+    <record id="rule_alert_log_admin_read_all" model="ir.rule">
+        <field name="name">BI Журнал алерта: адміністратор — read усіх</field>
+        <field name="model_id" ref="model_td_bi_alert_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('td_bi_dashboard.group_bi_admin'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</odoo>

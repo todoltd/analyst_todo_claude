@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.subscription — list                                         -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_subscription_list" model="ir.ui.view">
+        <field name="name">td.bi.subscription.list</field>
+        <field name="model">td.bi.subscription</field>
+        <field name="arch" type="xml">
+            <list string="Підписки">
+                <field name="dashboard_id"/>
+                <field name="schedule_type"/>
+                <field name="format"/>
+                <field name="next_run"/>
+                <field name="last_run"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.subscription — form (кнопка-дія «Надіслати зараз»)          -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_subscription_form" model="ir.ui.view">
+        <field name="name">td.bi.subscription.form</field>
+        <field name="model">td.bi.subscription</field>
+        <field name="arch" type="xml">
+            <form string="Підписка">
+                <header>
+                    <!-- AC-61, AC-33 — доставка знімка від імені кожного отримувача -->
+                    <button name="action_send_now" type="object" string="Надіслати зараз"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="dashboard_id"/>
+                            <field name="page_ids" widget="many2many_tags"/>
+                            <field name="format"/>
+                            <field name="mail_template_id"/>
+                            <field name="only_if_data"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="schedule_type"/>
+                            <field name="weekday_ids" widget="many2many_tags"
+                                   invisible="schedule_type != 'weekly'"/>
+                            <field name="monthday" invisible="schedule_type != 'monthly'"/>
+                            <field name="time" widget="float_time"
+                                   invisible="schedule_type == 'cron'"/>
+                            <field name="cron_expr" invisible="schedule_type != 'cron'"
+                                   groups="td_bi_dashboard.group_bi_admin"/>
+                            <field name="last_run" readonly="1"/>
+                            <field name="next_run" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Отримувачі" name="recipients">
+                            <group>
+                                <field name="recipient_user_ids" widget="many2many_tags"/>
+                                <field name="recipient_partner_ids" widget="many2many_tags"/>
+                                <field name="emails" placeholder="Зовнішні email-адреси..."/>
+                            </group>
+                        </page>
+                        <page string="Фільтри розкладу" name="filters">
+                            <field name="filters_payload"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bi_subscription" model="ir.actions.act_window">
+        <field name="name">BI: Підписки</field>
+        <field name="res_model">td.bi.subscription</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.alert — list                                                -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_alert_list" model="ir.ui.view">
+        <field name="name">td.bi.alert.list</field>
+        <field name="model">td.bi.alert</field>
+        <field name="arch" type="xml">
+            <list string="Алерти">
+                <field name="widget_id"/>
+                <field name="measure_key"/>
+                <field name="operator"/>
+                <field name="threshold"/>
+                <field name="throttle"/>
+                <field name="last_triggered"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.alert — form (smart-кнопка «Журнал спрацювань»)             -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_alert_form" model="ir.ui.view">
+        <field name="name">td.bi.alert.form</field>
+        <field name="model">td.bi.alert</field>
+        <field name="arch" type="xml">
+            <form string="Алерт">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <!-- AC-35 — smart-кнопка переходу до td.bi.alert.log по alert_id -->
+                        <button name="action_view_trigger_log" type="object"
+                                class="oe_stat_button" icon="fa-bell">
+                            <field name="trigger_log_ids" widget="statinfo" string="Спрацювань"/>
+                        </button>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="widget_id"/>
+                            <field name="measure_key"/>
+                            <field name="operator"/>
+                            <field name="threshold"/>
+                            <field name="threshold_parameter_id"/>
+                        </group>
+                        <group>
+                            <field name="check_interval"/>
+                            <field name="throttle"/>
+                            <field name="channels"/>
+                            <field name="last_triggered" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Отримувачі" name="recipients">
+                            <field name="recipient_user_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Журнал спрацювань" name="log">
+                            <field name="trigger_log_ids">
+                                <list>
+                                    <field name="create_date"/>
+                                    <field name="value"/>
+                                    <field name="delivery"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bi_alert" model="ir.actions.act_window">
+        <field name="name">BI: Алерти</field>
+        <field name="res_model">td.bi.alert</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.alert.log — list+form (журнал; тільки читання)              -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_alert_log_list" model="ir.ui.view">
+        <field name="name">td.bi.alert.log.list</field>
+        <field name="model">td.bi.alert.log</field>
+        <field name="arch" type="xml">
+            <list string="Журнал спрацювань алертів" create="false" edit="false">
+                <field name="create_date"/>
+                <field name="alert_id"/>
+                <field name="value"/>
+                <field name="delivery"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_alert_log_form" model="ir.ui.view">
+        <field name="name">td.bi.alert.log.form</field>
+        <field name="model">td.bi.alert.log</field>
+        <field name="arch" type="xml">
+            <form string="Спрацювання алерта" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <field name="alert_id"/>
+                        <field name="create_date"/>
+                        <field name="value"/>
+                        <field name="delivery"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_bi_alert_log" model="ir.actions.act_window">
+        <field name="name">Журнал спрацювань алертів</field>
+        <field name="res_model">td.bi.alert.log</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

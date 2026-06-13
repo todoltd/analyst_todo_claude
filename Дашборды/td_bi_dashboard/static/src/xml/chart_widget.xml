@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- AC-14 — Графік Chart.js ('bar'/'column'/'line'/'area'/'pie'); порожній/помилковий стан без падіння. -->
+    <t t-name="td_bi_dashboard.ChartWidget">
+        <div class="o_bi_chart h-100 d-flex flex-column position-relative">
+            <!-- Помилка рендеру/бандла (AC-52): картка-повідомлення, сторінка живе. -->
+            <div t-if="state.renderError"
+                 class="o_bi_chart_error flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                <span>Не вдалося відобразити графік</span>
+            </div>
+
+            <!-- Порожній стан: немає числових даних. -->
+            <div t-elif="isEmpty"
+                 class="o_bi_chart_empty flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                <span>Немає даних для відображення</span>
+            </div>
+
+            <!-- Полотно Chart.js (рендериться у onMounted). -->
+            <div t-else="" class="o_bi_chart_canvas_wrap flex-grow-1 position-relative">
+                <canvas t-ref="canvas" class="o_bi_chart_canvas"/>
+            </div>
+        </div>
+    </t>
+
+</templates>

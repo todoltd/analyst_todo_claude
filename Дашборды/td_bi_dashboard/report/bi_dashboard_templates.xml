@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- QWeb-шаблони PDF дашборда (AC-32: фільтри в колонтитулі, графіки растром) -->
+
+    <!-- Колонтитул з активними фільтрами на момент експорту (AC-32) -->
+    <template id="bi_dashboard_report_header">
+        <div class="header">
+            <div class="row">
+                <div class="col-6">
+                    <span t-out="dashboard.name or ''"/>
+                </div>
+                <div class="col-6 text-end">
+                    <!-- TODO: AC-32 — стан активних фільтрів на момент експорту -->
+                    <span t-out="filters_label or ''"/>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="bi_dashboard_report_footer">
+        <div class="footer">
+            <div class="text-center">
+                <span class="page"/> / <span class="topage"/>
+            </div>
+        </div>
+    </template>
+
+    <!-- Один віджет: графік присутній растром (chart.toBase64Image()), без розрізання (AC-32) -->
+    <template id="bi_dashboard_report_widget">
+        <!-- TODO: AC-32 — кожен графік растром через chart.toBase64Image(); посторінкова розбивка не ріже віджети -->
+        <div class="bi-report-widget" style="page-break-inside: avoid;">
+            <h3 t-out="widget.get('title') or ''"/>
+            <t t-if="widget.get('image')">
+                <img t-att-src="widget.get('image')" style="max-width:100%;"/>
+            </t>
+            <t t-else="">
+                <p t-out="widget.get('placeholder') or 'Графік недоступний'"/>
+            </t>
+        </div>
+    </template>
+
+    <!-- Документ однієї сторінки дашборда -->
+    <template id="bi_dashboard_report_document">
+        <t t-call="web.external_layout">
+            <div class="page">
+                <t t-call="td_bi_dashboard.bi_dashboard_report_header"/>
+                <!-- TODO: AC-32 — рендер усіх віджетів сторінки растром, без розрізання -->
+                <t t-foreach="widgets or []" t-as="widget">
+                    <t t-call="td_bi_dashboard.bi_dashboard_report_widget"/>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- Кореневий шаблон звіту (ir.actions.report report_name) -->
+    <template id="bi_dashboard_report_main">
+        <t t-call="web.html_container">
+            <!-- TODO: AC-32 — docs = знімок render_snapshot дашборда (растрові графіки) -->
+            <t t-foreach="docs or []" t-as="dashboard">
+                <t t-call="td_bi_dashboard.bi_dashboard_report_document"/>
+            </t>
+        </t>
+    </template>
+
+</odoo>

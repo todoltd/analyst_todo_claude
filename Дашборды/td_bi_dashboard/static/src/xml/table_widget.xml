@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- AC-36/AC-18 — Таблиця: рядки data.rows (keys+values) + підсумковий рядок; порожній стан. -->
+    <t t-name="td_bi_dashboard.TableWidget">
+        <div class="o_bi_table h-100 d-flex flex-column">
+            <!-- Порожній стан (AC-18): немає рядків -> повідомлення, не помилка. -->
+            <div t-if="isEmpty" class="o_bi_table_empty flex-grow-1 d-flex align-items-center justify-content-center text-muted">
+                <span>Немає даних для відображення</span>
+            </div>
+
+            <div t-else="" class="o_bi_table_scroll flex-grow-1 overflow-auto">
+                <table class="o_bi_table_el table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th t-foreach="columns" t-as="col" t-key="col.name"
+                                t-att-class="{ 'text-end': col.kind === 'value' }">
+                                <span t-esc="col.label"/>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Клік по рядку -> drill/cross-filter; активний рядок підсвічено. // AC-14/AC-15 -->
+                        <tr t-foreach="rows" t-as="row" t-key="row_index"
+                            style="cursor: pointer;"
+                            t-att-class="{ 'table-active': isRowActive(row_index) }"
+                            t-on-click="() => this.onRowClick(row_index)">
+                            <td t-foreach="columns" t-as="col" t-key="col.name"
+                                t-att-class="{ 'text-end': col.kind === 'value' }">
+                                <span t-esc="cell(row, col)"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <!-- Підсумковий рядок з data.totals -->
+                    <tfoot t-if="hasTotals">
+                        <tr class="o_bi_table_totals fw-bold">
+                            <td t-foreach="columns" t-as="col" t-key="col.name"
+                                t-att-class="{ 'text-end': col.kind === 'value' }">
+                                <span t-esc="totalCell(col)"/>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </t>
+
+</templates>

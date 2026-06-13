@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ============================================================== -->
+        <!-- Demo-контакти: збагачуємо дані, щоб графіки/таблиця/drill були  -->
+        <!-- виразними (країни + тип). Голий інстал має лише ~2 контакти.    -->
+        <!-- ============================================================== -->
+        <record id="bi_demo_partner_ua_co1" model="res.partner">
+            <field name="name">Демо ТОВ «Київ-Тех»</field>
+            <field name="is_company" eval="True"/>
+            <field name="country_id" ref="base.ua"/>
+        </record>
+        <record id="bi_demo_partner_ua_co2" model="res.partner">
+            <field name="name">Демо ТОВ «Львів-Софт»</field>
+            <field name="is_company" eval="True"/>
+            <field name="country_id" ref="base.ua"/>
+        </record>
+        <record id="bi_demo_partner_ua_p1" model="res.partner">
+            <field name="name">Демо — Олена Коваль</field>
+            <field name="is_company" eval="False"/>
+            <field name="country_id" ref="base.ua"/>
+        </record>
+        <record id="bi_demo_partner_ua_p2" model="res.partner">
+            <field name="name">Демо — Андрій Шевченко</field>
+            <field name="is_company" eval="False"/>
+            <field name="country_id" ref="base.ua"/>
+        </record>
+        <record id="bi_demo_partner_pl_co1" model="res.partner">
+            <field name="name">Демо Sp. z o.o. «Warsaw-Data»</field>
+            <field name="is_company" eval="True"/>
+            <field name="country_id" ref="base.pl"/>
+        </record>
+        <record id="bi_demo_partner_pl_p1" model="res.partner">
+            <field name="name">Демо — Jan Kowalski</field>
+            <field name="is_company" eval="False"/>
+            <field name="country_id" ref="base.pl"/>
+        </record>
+        <record id="bi_demo_partner_de_co1" model="res.partner">
+            <field name="name">Демо GmbH «Berlin-Analytics»</field>
+            <field name="is_company" eval="True"/>
+            <field name="country_id" ref="base.de"/>
+        </record>
+
+        <!-- ============================================================== -->
+        <!-- Demo датасет: Контакти (модель res.partner — стабільна модель) -->
+        <!-- visibility=global: датасет видимий усім (демо для перевірки     -->
+        <!-- рендеру дашборда; record rules датасету пропускають global).    -->
+        <!-- ============================================================== -->
+        <record id="bi_demo_dataset_partners" model="td.bi.dataset">
+            <field name="name">BI: Демо — Контакти</field>
+            <field name="description">Демонстраційний датасет на моделі контактів (res.partner).</field>
+            <field name="mode">model</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="domain">[]</field>
+            <field name="currency_strategy">sum_currency</field>
+            <field name="cache_ttl">600</field>
+            <field name="row_limit">100000</field>
+            <field name="visibility">global</field>
+            <!-- Якір періоду для часового інтелекту (YoY/MTD) — поле дати створення. -->
+            <field name="date_field_default">create_date</field>
+        </record>
+
+        <!-- Вимір: дата створення (для часового інтелекту — групування за роком/місяцем) -->
+        <record id="bi_demo_field_partner_created" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">created</field>
+            <field name="path">create_date</field>
+            <field name="field_type">datetime</field>
+            <field name="role">dimension</field>
+            <field name="visible" eval="True"/>
+            <field name="sequence">5</field>
+        </record>
+
+        <!-- Вимір: країна (relational path country_id) -->
+        <record id="bi_demo_field_partner_country" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">country</field>
+            <field name="path">country_id</field>
+            <field name="field_type">many2one</field>
+            <field name="role">dimension</field>
+            <field name="visible" eval="True"/>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Вимір: компанія/особа (is_company — stored boolean, групується) -->
+        <record id="bi_demo_field_partner_type" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">is_company</field>
+            <field name="path">is_company</field>
+            <field name="field_type">boolean</field>
+            <field name="role">dimension</field>
+            <field name="visible" eval="True"/>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Міра: кількість записів (count за id) -->
+        <record id="bi_demo_field_partner_count" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">partner_count</field>
+            <field name="path">id</field>
+            <field name="field_type">integer</field>
+            <field name="role">measure</field>
+            <field name="aggregator">count</field>
+            <field name="visible" eval="True"/>
+            <field name="sequence">30</field>
+        </record>
+
+        <!-- Іменована міра: проста count за полем partner_count -->
+        <record id="bi_demo_measure_partner_count" model="td.bi.measure">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">Кількість контактів</field>
+            <field name="field_id" ref="bi_demo_field_partner_count"/>
+            <field name="aggregator">count</field>
+            <field name="show_as">value</field>
+            <field name="time_intelligence">none</field>
+            <field name="comparison">none</field>
+        </record>
+
+        <!-- Міра з часовим інтелектом: count із порівнянням до попереднього року (YoY).
+             Дає колонки id:count__prior / __delta / __delta_pct у межах серії за роком. -->
+        <record id="bi_demo_measure_partner_count_yoy" model="td.bi.measure">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">Контакти YoY</field>
+            <field name="field_id" ref="bi_demo_field_partner_count"/>
+            <field name="aggregator">count</field>
+            <field name="show_as">diff_prev_pct</field>
+            <field name="time_intelligence">yoy</field>
+            <field name="comparison">prev_year</field>
+        </record>
+
+        <!-- Кумулятивна міра: count за поточний рік-до-сьогодні (YTD). Запит, що її просить,
+             сервер звужує доменом [1 січня .. зараз] у tz користувача. -->
+        <record id="bi_demo_measure_partner_count_ytd" model="td.bi.measure">
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="name">Контакти YTD</field>
+            <field name="field_id" ref="bi_demo_field_partner_count"/>
+            <field name="aggregator">count</field>
+            <field name="show_as">value</field>
+            <field name="time_intelligence">ytd</field>
+            <field name="comparison">none</field>
+        </record>
+
+        <!-- ============================================================== -->
+        <!-- Demo дашборд: опублікований, власник — адміністратор            -->
+        <!-- ============================================================== -->
+        <record id="bi_demo_dashboard" model="td.bi.dashboard">
+            <field name="name">BI: Демо — Огляд контактів</field>
+            <field name="description">Демонстраційний дашборд для перевірки рендеру (KPI + таблиця + стовпці).</field>
+            <field name="state">published</field>
+            <field name="owner_id" ref="base.user_admin"/>
+            <field name="theme_id" ref="bi_theme_default"/>
+        </record>
+
+        <!-- Контрол-фільтр: тип контакту (фільтрує всі віджети за is_company) -->
+        <record id="bi_demo_control_type" model="td.bi.control">
+            <field name="dashboard_id" ref="bi_demo_dashboard"/>
+            <field name="control_type">dropdown</field>
+            <field name="label">Тип контакту</field>
+            <field name="sequence">10</field>
+            <field name="layout">{"field": "is_company", "options": [{"value": true, "label": "Компанія"}, {"value": false, "label": "Особа"}]}</field>
+        </record>
+
+        <record id="bi_demo_page_main" model="td.bi.dashboard.page">
+            <field name="dashboard_id" ref="bi_demo_dashboard"/>
+            <field name="name">Огляд</field>
+            <field name="sequence">10</field>
+            <field name="is_hidden" eval="False"/>
+        </record>
+
+        <!-- ── Віджет 1: KPI-картка (widget_type='kpi_card') ──
+             Верхній лівий блок; сітка 24 колонки: x=0, width=8 -->
+        <record id="bi_demo_widget_kpi" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">kpi_card</field>
+            <field name="title">Усього контактів</field>
+            <field name="config">{
+                "data": {
+                    "groupby": [],
+                    "measures": [],
+                    "aggregates": ["__count"]
+                },
+                "style": {
+                    "format": {"decimals": 0},
+                    "show_delta": false
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">0</field>
+            <field name="pos_y">0</field>
+            <field name="width">8</field>
+            <field name="height">4</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- ── Віджет 2: Таблиця (widget_type='table') ──
+             Верхній правий блок; x=8, width=16 -->
+        <record id="bi_demo_widget_table" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">table</field>
+            <field name="title">Контакти за країнами</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["country_id"],
+                    "measures": [],
+                    "aggregates": ["__count"],
+                    "limit": 50
+                },
+                "style": {
+                    "striped": true,
+                    "columns": [
+                        {"field": "country_id", "label": "Країна"},
+                        {"field": "id:count", "label": "Кількість"}
+                    ]
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">8</field>
+            <field name="pos_y">0</field>
+            <field name="width">16</field>
+            <field name="height">8</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- ── Віджет 3: Стовпці (widget_type='bar') ──
+             Нижній лівий блок; x=0, width=8, y=4 -->
+        <record id="bi_demo_widget_bar" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">bar</field>
+            <field name="title">Контакти за типом</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["is_company"],
+                    "measures": [],
+                    "aggregates": ["__count"]
+                },
+                "style": {
+                    "x_axis": "is_company",
+                    "y_axis": "id:count",
+                    "legend": "bottom"
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">0</field>
+            <field name="pos_y">4</field>
+            <field name="width">8</field>
+            <field name="height">8</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <!-- ── Віджет 4: Кругова (widget_type='pie') — розподіл за країнами ──
+             Нижній правий блок; x=8, width=16, y=8 -->
+        <record id="bi_demo_widget_pie" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">pie</field>
+            <field name="title">Розподіл за країнами</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["country_id"],
+                    "measures": [],
+                    "aggregates": ["__count"]
+                },
+                "style": {
+                    "x_axis": "country_id",
+                    "y_axis": "id:count",
+                    "legend": "bottom"
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">8</field>
+            <field name="pos_y">8</field>
+            <field name="width">16</field>
+            <field name="height">8</field>
+            <field name="sequence">40</field>
+        </record>
+
+        <!-- ── Віджет 5: Таблиця YoY (часовий інтелект) — контакти за роком + минулий рік + Δ% ──
+             groupby create_date:year, міра «Контакти YoY» (comparison=prev_year);
+             колонки показують id:count, id:count__prior, id:count__delta_pct. -->
+        <record id="bi_demo_widget_yoy" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">table</field>
+            <field name="title">Контакти за роком (проти минулого року)</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["create_date:year"],
+                    "measures": ["Контакти YoY"],
+                    "aggregates": ["__count"],
+                    "limit": 20
+                },
+                "style": {
+                    "striped": true,
+                    "columns": [
+                        {"field": "create_date:year", "label": "Рік"},
+                        {"field": "id:count", "label": "Контактів"},
+                        {"field": "id:count__prior", "label": "Минулий рік"},
+                        {"field": "id:count__delta", "label": "Δ"},
+                        {"field": "id:count__delta_pct", "label": "Δ, %"}
+                    ]
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">0</field>
+            <field name="pos_y">12</field>
+            <field name="width">24</field>
+            <field name="height">8</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <!-- ── Віджет 6: KPI YTD (кумулятив) — контактів цьогоріч до сьогодні ──
+             measures=['Контакти YTD'] -> сервер звужує запит до поточного року. -->
+        <record id="bi_demo_widget_kpi_ytd" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">kpi_card</field>
+            <field name="title">Контактів цьогоріч (YTD)</field>
+            <field name="config">{
+                "data": {
+                    "groupby": [],
+                    "measures": ["Контакти YTD"],
+                    "aggregates": ["__count"]
+                },
+                "style": {
+                    "format": {"decimals": 0}
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">0</field>
+            <field name="pos_y">20</field>
+            <field name="width">8</field>
+            <field name="height">4</field>
+            <field name="sequence">60</field>
+        </record>
+
+        <!-- ── Віджет 7: Стовпці YoY із примарною серією (AC-42) ──
+             groupby create_date:year + міра «Контакти YoY»: поточна серія + напівпрозора
+             «минулий період» (з колонки id:count__prior). -->
+        <record id="bi_demo_widget_bar_yoy" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_dataset_partners"/>
+            <field name="widget_type">bar</field>
+            <field name="title">Контакти за роком + минулий рік (YoY)</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["create_date:year"],
+                    "measures": ["Контакти YoY"],
+                    "aggregates": ["__count"]
+                },
+                "style": {
+                    "x_axis": "create_date:year",
+                    "y_axis": "id:count",
+                    "legend": "bottom"
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">8</field>
+            <field name="pos_y">20</field>
+            <field name="width">16</field>
+            <field name="height">8</field>
+            <field name="sequence">70</field>
+        </record>
+
+        <!-- ============================================================== -->
+        <!-- Demo БЛЕНД (mode='blend'): res.partner ⟕ res.country           -->
+        <!-- Предагрегація кожного джерела + LEFT JOIN за country_id=id;    -->
+        <!-- RLS у кожному CTE (AC-38/39/41).                                -->
+        <!-- ============================================================== -->
+        <record id="bi_demo_blend" model="td.bi.dataset">
+            <field name="name">BI: Демо — Бленд (контакти × країни)</field>
+            <field name="description">Бленд двох джерел: контакти LEFT JOIN країни за country_id.</field>
+            <field name="mode">blend</field>
+            <field name="cache_ttl">600</field>
+            <field name="visibility">global</field>
+        </record>
+        <record id="bi_demo_blend_f_pc" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="name">partner_country</field>
+            <field name="path">country_id</field>
+            <field name="field_type">many2one</field>
+            <field name="role">dimension</field>
+        </record>
+        <record id="bi_demo_blend_f_pcount" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="name">partner_count</field>
+            <field name="path">id</field>
+            <field name="field_type">integer</field>
+            <field name="role">measure</field>
+            <field name="aggregator">count</field>
+        </record>
+        <record id="bi_demo_blend_f_ckey" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="name">country_key</field>
+            <field name="path">id</field>
+            <field name="field_type">integer</field>
+            <field name="role">dimension</field>
+        </record>
+        <record id="bi_demo_blend_f_ccode" model="td.bi.dataset.field">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="name">country_code</field>
+            <field name="path">code</field>
+            <field name="field_type">char</field>
+            <field name="role">dimension</field>
+        </record>
+        <record id="bi_demo_blend_join_p" model="td.bi.dataset.join">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="sequence">0</field>
+            <field name="source_model_id" ref="base.model_res_partner"/>
+            <field name="included_field_ids" eval="[(6, 0, [ref('bi_demo_blend_f_pc'), ref('bi_demo_blend_f_pcount')])]"/>
+        </record>
+        <record id="bi_demo_blend_join_c" model="td.bi.dataset.join">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="sequence">1</field>
+            <field name="source_model_id" ref="base.model_res_country"/>
+            <field name="join_type">left</field>
+            <field name="included_field_ids" eval="[(6, 0, [ref('bi_demo_blend_f_ckey'), ref('bi_demo_blend_f_ccode')])]"/>
+        </record>
+        <record id="bi_demo_blend_key" model="td.bi.dataset.join.key">
+            <field name="join_id" ref="bi_demo_blend_join_c"/>
+            <field name="left_field">partner_country</field>
+            <field name="right_field">country_key</field>
+        </record>
+        <record id="bi_demo_blend_measure" model="td.bi.measure">
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="name">Кількість контактів</field>
+            <field name="field_id" ref="bi_demo_blend_f_pcount"/>
+            <field name="aggregator">count</field>
+        </record>
+
+        <!-- ── Віджет 8: Таблиця бленда — контакти за кодом країни ── -->
+        <record id="bi_demo_widget_blend" model="td.bi.widget">
+            <field name="page_id" ref="bi_demo_page_main"/>
+            <field name="dataset_id" ref="bi_demo_blend"/>
+            <field name="widget_type">table</field>
+            <field name="title">Бленд: контакти × країни (код)</field>
+            <field name="config">{
+                "data": {
+                    "groupby": ["country_code"],
+                    "measures": ["Кількість контактів"]
+                },
+                "style": {
+                    "striped": true,
+                    "columns": [
+                        {"field": "country_code", "label": "Код країни"},
+                        {"field": "Кількість контактів", "label": "Контактів", "kind": "value"}
+                    ]
+                }
+            }</field>
+            <field name="domain">[]</field>
+            <field name="pos_x">0</field>
+            <field name="pos_y">28</field>
+            <field name="width">24</field>
+            <field name="height">8</field>
+            <field name="sequence">80</field>
+        </record>
+
+    </data>
+</odoo>

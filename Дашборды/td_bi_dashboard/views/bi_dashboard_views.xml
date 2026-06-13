@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard — kanban-каталог                                  -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_kanban" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.kanban</field>
+        <field name="model">td.bi.dashboard</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_dashboard" default_group_by="group_folder_id">
+                <field name="state"/>
+                <field name="owner_id"/>
+                <field name="tag_ids"/>
+                <field name="thumbnail"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image" t-if="record.thumbnail.raw_value">
+                                <img t-att-src="kanban_image('td.bi.dashboard', 'thumbnail', record.id.raw_value)"
+                                     alt="Мініатюра"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <div class="o_kanban_record_subtitle">
+                                    <field name="owner_id"/>
+                                </div>
+                                <div>
+                                    <field name="tag_ids" widget="many2many_tags"/>
+                                </div>
+                                <div>
+                                    <field name="state" widget="label_selection"
+                                           options="{'classes': {'draft': 'secondary', 'published': 'success', 'archived': 'danger'}}"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard — search                                          -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_search" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.search</field>
+        <field name="model">td.bi.dashboard</field>
+        <field name="arch" type="xml">
+            <search string="Пошук дашбордів">
+                <field name="name"/>
+                <field name="tag_ids"/>
+                <field name="owner_id"/>
+                <field name="group_folder_id"/>
+                <filter string="Мої" name="my_dashboards" domain="[('owner_id', '=', uid)]"/>
+                <filter string="Обрані" name="favorites" domain="[('favorite_user_ids', 'in', uid)]"/>
+                <separator/>
+                <filter string="Чернетки" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Опубліковані" name="published" domain="[('state', '=', 'published')]"/>
+                <filter string="Архів" name="archived" domain="[('state', '=', 'archived')]"/>
+                <group>
+                    <filter string="Розділ" name="group_folder" context="{'group_by': 'group_folder_id'}"/>
+                    <filter string="Стан" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Власник" name="group_owner" context="{'group_by': 'owner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard — list                                            -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_list" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.list</field>
+        <field name="model">td.bi.dashboard</field>
+        <field name="arch" type="xml">
+            <list string="Дашборди">
+                <field name="name"/>
+                <field name="group_folder_id"/>
+                <field name="tag_ids" widget="many2many_tags"/>
+                <field name="owner_id"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'published'"
+                       decoration-muted="state == 'archived'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard — form (header action_publish, statusbar, chatter)-->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- Дія версій (визначено до форми, бо smart-кнопка форми посилається на неї) -->
+    <record id="action_bi_dashboard_version" model="ir.actions.act_window">
+        <field name="name">Версії дашборда</field>
+        <field name="res_model">td.bi.dashboard.version</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_bi_dashboard_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.form</field>
+        <field name="model">td.bi.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Дашборд">
+                <header>
+                    <!-- AC-25, AC-28 — публікація: видима редактору у стані draft -->
+                    <button name="action_publish" type="object" string="Опублікувати"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_open" type="object" string="Відкрити дашборд"
+                            class="btn-secondary"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,published"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <!-- smart-кнопка «Версії» (VersionHistory; фільтр по dashboard_id) -->
+                        <button name="%(action_bi_dashboard_version)d" type="action"
+                                class="oe_stat_button" icon="fa-history"
+                                context="{'search_default_dashboard_id': id, 'default_dashboard_id': id}">
+                            <field name="published_version_id" widget="statinfo" string="Версії"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Назва дашборда"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="group_folder_id"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="owner_id"/>
+                            <field name="theme_id"/>
+                        </group>
+                        <group>
+                            <field name="company_ids" widget="many2many_tags"
+                                   groups="base.group_multi_company"/>
+                            <field name="menu_id" readonly="1"/>
+                            <field name="published_version_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Сторінки" name="pages">
+                            <field name="page_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="is_hidden"/>
+                                    <field name="is_drillthrough"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Контроли" name="controls">
+                            <field name="control_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="label"/>
+                                    <field name="control_type"/>
+                                    <field name="is_locked"/>
+                                    <field name="is_hidden"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Доступ" name="access">
+                            <field name="access_ids">
+                                <list editable="bottom">
+                                    <field name="user_id"/>
+                                    <field name="group_id"/>
+                                    <field name="role"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Опис" name="description">
+                            <field name="description" placeholder="Опис дашборда для каталогу..."/>
+                            <field name="thumbnail" widget="image"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard.page — проста form                                -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_page_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.page.form</field>
+        <field name="model">td.bi.dashboard.page</field>
+        <field name="arch" type="xml">
+            <form string="Сторінка дашборда">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="dashboard_id"/>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="grid_rows_min"/>
+                        </group>
+                        <group>
+                            <field name="is_hidden"/>
+                            <field name="is_drillthrough"/>
+                            <field name="drillthrough_field_ids" invisible="not is_drillthrough"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Контроли сторінки" name="page_controls">
+                            <field name="control_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="label"/>
+                                    <field name="control_type"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard.access — проста form                              -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_access_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.access.form</field>
+        <field name="model">td.bi.dashboard.access</field>
+        <field name="arch" type="xml">
+            <form string="Доступ до дашборда">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="dashboard_id"/>
+                            <field name="user_id"/>
+                            <field name="group_id"/>
+                        </group>
+                        <group>
+                            <field name="role"/>
+                            <field name="active"/>
+                            <field name="extra_domain"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard.version — list+form (smart-кнопка «Версії»)       -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_version_list" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.version.list</field>
+        <field name="model">td.bi.dashboard.version</field>
+        <field name="arch" type="xml">
+            <list string="Версії дашборда">
+                <field name="name"/>
+                <field name="dashboard_id"/>
+                <field name="create_uid"/>
+                <field name="create_date"/>
+                <field name="is_published_snapshot"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_dashboard_version_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.version.form</field>
+        <field name="model">td.bi.dashboard.version</field>
+        <field name="arch" type="xml">
+            <form string="Версія дашборда">
+                <header>
+                    <!-- AC-28 — відкат / повторна публікація знімка -->
+                    <button name="action_restore_to_draft" type="object"
+                            string="Відкотити в чернетку" class="btn-secondary"/>
+                    <button name="action_publish_this" type="object"
+                            string="Опублікувати цю версію" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="dashboard_id"/>
+                            <field name="name"/>
+                            <field name="is_published_snapshot"/>
+                        </group>
+                        <group>
+                            <field name="create_uid" readonly="1"/>
+                            <field name="create_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Опис публікації">
+                        <field name="comment" nolabel="1"/>
+                    </group>
+                    <group string="Знімок конфігурації">
+                        <field name="config_snapshot" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard.tag — проста list+form                            -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_tag_list" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.tag.list</field>
+        <field name="model">td.bi.dashboard.tag</field>
+        <field name="arch" type="xml">
+            <list string="Теги каталогу" editable="bottom">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_dashboard_tag_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.tag.form</field>
+        <field name="model">td.bi.dashboard.tag</field>
+        <field name="arch" type="xml">
+            <form string="Тег каталогу">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="color" widget="color_picker"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- td.bi.dashboard.group — проста list+form (розділи каталогу)       -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="view_bi_dashboard_group_list" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.group.list</field>
+        <field name="model">td.bi.dashboard.group</field>
+        <field name="arch" type="xml">
+            <list string="Розділи каталогу" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_bi_dashboard_group_form" model="ir.ui.view">
+        <field name="name">td.bi.dashboard.group.form</field>
+        <field name="model">td.bi.dashboard.group</field>
+        <field name="arch" type="xml">
+            <form string="Розділ каталогу">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="sequence"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- Дія вікна — каталог дашбордів (для адмін-навігації; kanban)       -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="action_bi_dashboard" model="ir.actions.act_window">
+        <field name="name">BI: Дашборди</field>
+        <field name="res_model">td.bi.dashboard</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_bi_dashboard_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Створіть перший дашборд
+            </p>
+            <p>
+                Дашборд — інтерактивний звіт зі сторінок, віджетів і контролів
+                поверх ваших датасетів.
+            </p>
+        </field>
+    </record>
+
+</odoo>

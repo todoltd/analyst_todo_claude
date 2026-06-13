@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Системна тема за замовчуванням (is_default=True): дефолтна палітра/шрифти -->
+        <record id="bi_theme_default" model="td.bi.theme">
+            <field name="name">BI: Стандартна тема</field>
+            <field name="is_default" eval="True"/>
+            <field name="config">{
+                "palette": ["#714B67", "#017E84", "#F0AD4E", "#5BC0DE", "#D9534F", "#5CB85C", "#9B59B6", "#34495E"],
+                "background": "#FFFFFF",
+                "surface": "#F9F9F9",
+                "text_color": "#111827",
+                "muted_color": "#6B7280",
+                "grid_color": "#E5E7EB",
+                "font_family": "Inter, system-ui, sans-serif",
+                "font_size": 13,
+                "border_radius": 8,
+                "row_height": 32,
+                "widget_defaults": {
+                    "kpi": {"show_delta": true},
+                    "table": {"striped": true},
+                    "chart": {"legend": "bottom"}
+                }
+            }</field>
+        </record>
+    </data>
+</odoo>

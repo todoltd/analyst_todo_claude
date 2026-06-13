@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- DashboardCanvas: CSS Grid 24 колонки. // AC-31 -->
+    <t t-name="td_bi_dashboard.DashboardCanvas">
+        <div class="o_bi_dashboard_grid">
+            <div t-foreach="widgets" t-as="w" t-key="w.id"
+                 class="o_bi_widget_cell"
+                 t-attf-style="{{ widgetStyle(w) }}">
+                <WidgetContainer widget="w"/>
+            </div>
+            <p t-if="!widgets.length" class="text-muted">Сторінка не містить віджетів.</p>
+        </div>
+    </t>
+
+</templates>

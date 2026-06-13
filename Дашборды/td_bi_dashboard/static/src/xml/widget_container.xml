@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- WidgetContainer: тулбар + лоадер/помилка/рендерер. // AC-52/AC-20 -->
+    <t t-name="td_bi_dashboard.WidgetContainer">
+        <div class="o_bi_widget card h-100 d-flex flex-column">
+            <!-- Тулбар з title -->
+            <div class="o_bi_widget_toolbar card-header py-2 px-3">
+                <span class="o_bi_widget_title fw-bold" t-esc="props.widget.title or ''"/>
+            </div>
+
+            <div class="o_bi_widget_body card-body flex-grow-1 position-relative">
+                <!-- Лоадер -->
+                <div t-if="state.loading" class="o_bi_widget_loading d-flex align-items-center justify-content-center h-100">
+                    <span class="text-muted">Завантаження…</span>
+                </div>
+
+                <!-- Картка помилки з «Повторити» // AC-52/AC-49 -->
+                <div t-elif="state.error" class="o_bi_widget_error d-flex flex-column align-items-center justify-content-center h-100 text-center">
+                    <div class="text-danger mb-2" t-esc="state.error"/>
+                    <button class="btn btn-sm btn-secondary" t-on-click="onRetry">
+                        Повторити
+                    </button>
+                </div>
+
+                <!-- Делегування рендеру за widget_type (лише коли є дані: OWL відхиляє null для type:Object) -->
+                <t t-elif="hasRenderer and state.data"
+                   t-component="rendererFor(props.widget.widget_type)"
+                   widget="props.widget"
+                   data="state.data"/>
+
+                <!-- Рендерер відомий, але даних ще/вже немає -->
+                <div t-elif="hasRenderer" class="o_bi_widget_empty text-muted d-flex align-items-center justify-content-center h-100">
+                    <span>Немає даних</span>
+                </div>
+
+                <!-- Невідомий тип віджета -->
+                <div t-else="" class="o_bi_widget_unknown text-muted d-flex align-items-center justify-content-center h-100">
+                    <span>Тип віджета «<t t-esc="props.widget.widget_type"/>» не підтримується.</span>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

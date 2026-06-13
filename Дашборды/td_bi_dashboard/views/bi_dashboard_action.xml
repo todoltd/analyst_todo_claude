@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- ir.actions.client — OWL клієнтська дія рендера дашборда           -->
+    <!-- tag="bi_dashboard"; реєстр actions (BiDashboardAction).           -->
+    <!-- Викликається через action_open() / get_runtime_config()          -->
+    <!-- (повний конфіг одним RPC). §2.4 SPEC.                             -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="dashboard_action" model="ir.actions.client">
+        <field name="name">BI: Дашборд</field>
+        <field name="tag">bi_dashboard</field>
+    </record>
+
+</odoo>

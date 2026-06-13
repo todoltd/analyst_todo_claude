@@ -1,0 +1,82 @@
+// Part of td_bi_dashboard. Author: ToDo. Since: 19.0.1.0.0
+// Стилі app shell: канва (сітка 24 колонки), картки-віджети, ControlBar, каталог.
+
+.o_bi_dashboard {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bs-body-bg, #fff);
+
+    .o_bi_dashboard_header {
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+        .o_bi_dashboard_title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+    }
+
+    .o_bi_control_bar {
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+        background-color: var(--bs-tertiary-bg, #f8f9fa);
+
+        .o_bi_control {
+            min-width: 140px;
+        }
+    }
+
+    .o_bi_dashboard_canvas {
+        overflow: auto;
+    }
+
+    // Сітка 24 колонки. // AC-31
+    .o_bi_dashboard_grid {
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        // Базова висота рядка для grid-row span height.
+        grid-auto-rows: minmax(60px, auto);
+        gap: 0.5rem;
+        align-content: start;
+        min-height: 100%;
+    }
+
+    // Комірка-обгортка одного віджета (позиція через inline grid-column/grid-row).
+    .o_bi_widget_cell {
+        min-width: 0;
+        min-height: 0;
+    }
+
+    // Картка віджета.
+    .o_bi_widget {
+        height: 100%;
+        overflow: hidden;
+
+        .o_bi_widget_toolbar {
+            background-color: var(--bs-tertiary-bg, #f8f9fa);
+            border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+
+            .o_bi_widget_title {
+                font-size: 0.9rem;
+            }
+        }
+
+        .o_bi_widget_body {
+            overflow: auto;
+        }
+    }
+
+    .o_bi_dashboard_loading,
+    .o_bi_dashboard_error {
+        color: var(--bs-secondary-color, #6c757d);
+    }
+
+    // Каталог опублікованих дашбордів (немає id).
+    .o_bi_catalog_grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1rem;
+
+        .o_bi_catalog_card {
+            min-height: 140px;
+        }
+    }
+}

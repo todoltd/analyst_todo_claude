@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- res.config.settings — сторінка налаштувань BI                     -->
+    <!-- statement_timeout, дефолтні ліміти, дебаунс контролів             -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <record id="res_config_settings_view_form_bi" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.td.bi</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="BI: Дашборди" name="td_bi_dashboard"
+                     logo="/td_bi_dashboard/static/description/icon.png"
+                     groups="td_bi_dashboard.group_bi_admin">
+                    <block title="Продуктивність запитів" name="bi_performance_block">
+                        <setting string="Таймаут BI-запиту"
+                                 help="statement_timeout на курсор перед виконанням; таймаут дає картку помилки (AC-49)">
+                            <field name="td_bi_statement_timeout"/>
+                            <span class="text-muted">секунд</span>
+                        </setting>
+                        <setting string="Паралельні data-RPC"
+                                 help="Розмір черги biDataService">
+                            <field name="td_bi_max_concurrent_rpc"/>
+                        </setting>
+                        <setting string="Дебаунс контролів"
+                                 help="Затримка перед перерахунком при зміні контролів">
+                            <field name="td_bi_control_debounce_ms"/>
+                            <span class="text-muted">мс</span>
+                        </setting>
+                        <setting string="Ліміт відповіді"
+                                 help="Максимальний розмір JSON-відповіді одного запиту">
+                            <field name="td_bi_max_response_mb"/>
+                            <span class="text-muted">МБ</span>
+                        </setting>
+                    </block>
+                    <block title="Ліміти вибірок" name="bi_limits_block">
+                        <setting string="Ліміт груп"
+                                 help="Максимум груп в агрегації віджета">
+                            <field name="td_bi_max_groups"/>
+                        </setting>
+                        <setting string="Ліміт точок часу"
+                                 help="Максимум точок у часовому ряді">
+                            <field name="td_bi_max_time_points"/>
+                        </setting>
+                        <setting string="Ліміт рядків таблиці"
+                                 help="Максимум рядків у табличному віджеті/прев'ю">
+                            <field name="td_bi_max_table_rows"/>
+                        </setting>
+                        <setting string="Глибина дерева полів"
+                                 help="Максимальна глибина обходу зв'язків у конструкторі (AC-04)">
+                            <field name="td_bi_field_tree_max_depth"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Дія відкриття налаштувань на вкладці BI -->
+    <record id="action_bi_config_settings" model="ir.actions.act_window">
+        <field name="name">BI: Налаштування</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'td_bi_dashboard'}</field>
+    </record>
+
+</odoo>

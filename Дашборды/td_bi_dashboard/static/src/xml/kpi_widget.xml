@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- AC-19/AC-08 — KPI-картка: велике число (totals/перший рядок) + підпис + формат. -->
+    <t t-name="td_bi_dashboard.KpiWidget">
+        <div class="o_bi_kpi d-flex flex-column justify-content-center align-items-center h-100 text-center p-2">
+            <!-- Велике значення міри -->
+            <div class="o_bi_kpi_value" t-att-class="{ 'text-muted': !hasValue }">
+                <span t-esc="displayValue"/>
+            </div>
+            <!-- Підпис KPI -->
+            <div t-if="label" class="o_bi_kpi_label text-muted">
+                <span t-esc="label"/>
+            </div>
+            <!-- Субпідпис (опційно) -->
+            <div t-if="sublabel" class="o_bi_kpi_sublabel small text-muted">
+                <span t-esc="sublabel"/>
+            </div>
+        </div>
+    </t>
+
+</templates>

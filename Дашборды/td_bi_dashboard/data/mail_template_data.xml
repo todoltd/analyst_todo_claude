@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Тіло розсилки підписки на дашборд (ВИМ-44, AC-33, AC-61) -->
+        <record id="mail_template_bi_subscription" model="mail.template">
+            <field name="name">BI: Розсилка дашборда</field>
+            <field name="model_id" ref="td_bi_dashboard.model_td_bi_subscription"/>
+            <field name="subject">BI: {{ object.dashboard_id.name }}</field>
+            <field name="email_from">{{ (object.create_uid.email_formatted or user.email_formatted) }}</field>
+            <field name="description">Лист доставки підписки на дашборд із вкладенням-знімком зрізу отримувача.</field>
+            <field name="body_html" type="html">
+                <div style="margin:0px;padding:0px;">
+                    <p>Вітаємо,</p>
+                    <p>
+                        У вкладенні — дашборд
+                        <strong t-out="object.dashboard_id.name or ''">Дашборд</strong>
+                        за вашими правами доступу та фільтрами підписки.
+                    </p>
+                    <p style="color:#888;">Цей лист сформовано автоматично за розкладом підписки BI.</p>
+                </div>
+            </field>
+            <field name="lang">{{ object.create_uid.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Тіло сповіщення алерта за порогом міри (ВИМ-44, AC-35) -->
+        <record id="mail_template_bi_alert" model="mail.template">
+            <field name="name">BI: Сповіщення алерта</field>
+            <field name="model_id" ref="td_bi_dashboard.model_td_bi_alert"/>
+            <field name="subject">BI: Спрацював алерт «{{ object.widget_id.title or object.measure_key }}»</field>
+            <field name="email_from">{{ user.email_formatted }}</field>
+            <field name="description">Сповіщення про спрацювання алерта за порогом міри віджета дашборда.</field>
+            <field name="body_html" type="html">
+                <div style="margin:0px;padding:0px;">
+                    <p>Вітаємо,</p>
+                    <p>
+                        Спрацював алерт на віджеті
+                        <strong t-out="object.widget_id.title or ''">Віджет</strong>:
+                        умова «значення
+                        <span t-out="object.operator or ''"/>
+                        поріг» виконана.
+                    </p>
+                    <p style="color:#888;">Цей лист сформовано автоматично системою алертів BI.</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

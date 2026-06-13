@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <!-- ControlBar: date range / dropdown / text -> bi_page_state. // AC-25/AC-26 -->
+    <t t-name="td_bi_dashboard.ControlBar">
+        <div class="o_bi_control_bar d-flex flex-wrap align-items-end gap-3 px-3 py-2">
+            <div t-foreach="props.controls" t-as="control" t-key="control.id" class="o_bi_control">
+                <label class="o_bi_control_label form-label mb-1 small text-muted" t-esc="control.label or control.name or ''"/>
+
+                <!-- Date range -->
+                <div t-if="controlType(control) === 'date_range'" class="d-flex align-items-center gap-1">
+                    <input type="date" class="form-control form-control-sm"
+                           t-on-change="(ev) => this.onDateChange(control, 'from', ev)"/>
+                    <span class="text-muted">—</span>
+                    <input type="date" class="form-control form-control-sm"
+                           t-on-change="(ev) => this.onDateChange(control, 'to', ev)"/>
+                </div>
+
+                <!-- Dropdown -->
+                <select t-elif="controlType(control) === 'dropdown'"
+                        class="form-select form-select-sm"
+                        t-on-change="(ev) => this.onDropdownChange(control, ev)">
+                    <option value="">Усі</option>
+                    <option t-foreach="options(control)" t-as="opt" t-key="opt_index"
+                            t-att-value="'' + (opt.value !== undefined ? opt.value : opt)">
+                        <t t-esc="opt.label !== undefined ? opt.label : opt"/>
+                    </option>
+                </select>
+
+                <!-- Text -->
+                <input t-else="" type="text" class="form-control form-control-sm"
+                       placeholder="Пошук…"
+                       t-on-input="(ev) => this.onTextChange(control, ev)"/>
+            </div>
+
+            <!-- Чипи cross-filter (drill): клік по графіку -> чип; «×» знімає. // AC-15 -->
+            <div t-if="crossFilters.length" class="o_bi_crossfilters d-flex flex-wrap align-items-center gap-2">
+                <span class="small text-muted">Деталізація:</span>
+                <span t-foreach="crossFilters" t-as="chip" t-key="chip_index"
+                      class="badge rounded-pill text-bg-primary d-inline-flex align-items-center gap-1">
+                    <t t-esc="(chip.field ? chip.field + ': ' : '') + (chip.label !== undefined ? chip.label : '')"/>
+                    <button type="button" class="btn-close btn-close-white"
+                            style="font-size:.55rem;"
+                            title="Зняти фільтр"
+                            t-on-click="() => this.removeChip(chip)"/>
+                </span>
+            </div>
+
+            <button class="btn btn-sm btn-link ms-auto" t-on-click="onReset">
+                Скинути
+            </button>
+        </div>
+    </t>
+
+</templates>
