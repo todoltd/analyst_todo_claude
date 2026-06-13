@@ -25,37 +25,37 @@ class BiShareController(Controller):
         Повертає (share, None) при валідному токені або (None, response)
         зі сторінкою-помилкою при невідповідності/деактивації/терміні.
         """
-        # TODO: AC-26 — sudo() лише для службового читання запису share (не бізнес-даних);
-        #       consteq(share.access_token, token); невідповідність → сторінка «посилання недійсне».
-        # TODO: AC-30 — active==False (action_revoke) або архівований дашборд → «посилання недійсне».
-        # TODO: AC-26 — expiration_date у минулому → сторінка «термін дії вичерпано».
-        # TODO: AC-27 — with_user(create_uid).has_access('read') == False → доступ закрито, без живих запитів.
-        # Заглушка: реальної перевірки немає, лише форма consteq для майбутньої реалізації.
+        # sudo() ЛИШЕ для службового читання запису share (метадані, не бізнес-дані);
+        # consteq — constant-time звірка токена; далі _check_public_validity (AC-26/27/30):
+        # active ∧ не прострочене ∧ автор досі має право читати дашборд.
         share = request.env['td.bi.dashboard.share'].sudo().browse(int(share_id)).exists()
         if not share or not consteq(share.access_token or '', token or ''):
+            return None, request.not_found()
+        if not share._check_public_validity():
             return None, request.not_found()
         return share, None
 
     @route('/bi/share/<int:share_id>/<string:token>', type='http', auth='public', website=False, csrf=False)
     def bi_share(self, share_id, token, **kwargs):
         """Frozen-сторінка дашборда за публічним посиланням (auth='public').  # AC-26, AC-27, AC-29, AC-30"""
-        # TODO: AC-26 — коректний токен → рендер знімка БЕЗ живих запитів до бізнес-моделей.
-        # TODO: AC-29 — доступний лише frozen-режим знімка (live-доступу до даних немає, ОВ-4).
-        # TODO: AC-27 — автор втратив право читання → доступ закрито (посилання деактивовано).
         share, err = self._get_share_or_invalid(share_id, token)
         if err is not None:
             return err
-        return request.make_response('', headers=[('Content-Type', 'text/html; charset=utf-8')])
+        # Лише frozen-знімок (AC-29): жодних живих запитів — мінімальна HTML-обгортка,
+        # дані тягне /data (також із замороженого знімка).
+        snapshot = share.get_frozen_data()
+        name = (snapshot.get('name') if isinstance(snapshot, dict) else '') or _("Дашборд")
+        html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>%s</title></head>' \
+               '<body><h1>%s</h1><p>BI frozen snapshot.</p></body></html>' % (name, name)
+        return request.make_response(html, headers=[('Content-Type', 'text/html; charset=utf-8')])
 
     @route('/bi/share/<int:share_id>/<string:token>/data', type='json', auth='public', csrf=False)
     def bi_share_data(self, share_id, token, **kwargs):
-        """Заморожені точки даних знімка (без живих запитів до бізнес-моделей).  # AC-26, AC-29"""
-        # TODO: AC-26 — віддати вже заморожені точки даних зі snapshot_attachment_id.
-        # TODO: AC-29 — жодних живих запитів до бізнес-моделей (лише frozen-знімок).
+        """Заморожені точки даних знімка (БЕЗ живих запитів до бізнес-моделей).  # AC-26, AC-29"""
         share, err = self._get_share_or_invalid(share_id, token)
         if err is not None:
             return {}
-        return {}
+        return share.get_frozen_data()
 
     @route('/bi/share/<int:share_id>/<string:token>/export', type='http', auth='public', csrf=False)
     def bi_share_export(self, share_id, token, **kwargs):

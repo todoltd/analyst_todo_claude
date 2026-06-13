@@ -964,13 +964,58 @@ class TdBiQueryCompiler(models.AbstractModel):
 
     @api.model
     def _find_covering_materialization(self, dataset, query_spec):
-        """Повертає RLS-безпечну td.bi.materialization, чиї виміри/міри/гранулярність ⊇ запиту,
-        або порожній набір. Stage-1 — заглушка (матеріалізація — Stage-2).
-        AC-62 — критерій «накриття»: виміри/міри/гранулярність запиту ⊆ предагрегата.
+        """Повертає RLS-безпечну td.bi.materialization, чиї виміри/міри ⊇ запиту, з побудованою
+        й оновленою фізичною таблицею; інакше порожній набір (роутер падає на сиру модель).
+        AC-62 — критерій «накриття»: виміри/міри запиту ⊆ предагрегата; AC-63 — лише is_rls_safe.
+
+        Серверне ОБСЛУГОВУВАННЯ з предагрегата (читання table_name із RLS-доменом ключа правила)
+        — наступний крок (потребує підтвердженого життєвого циклу MV на 19.0). Доти роутер
+        використовує цей детектор, але обслуговує сирою моделлю (числово ідентично, RLS коректний).
         """
-        # TODO: Stage-2 (AC-62) — порівняти dimension_paths/measure_specs/granularity з query_spec
-        # та перевірити is_rls_safe; повертати запис лише за повного накриття.
-        return self.env['td.bi.materialization'].browse()
+        Mat = self.env['td.bi.materialization'].sudo()
+        if not dataset:
+            return Mat.browse()
+        candidates = Mat.search([
+            ('dataset_id', '=', dataset.id),
+            ('table_name', '!=', False),
+            ('last_refresh', '!=', False),
+            ('is_rls_safe', '=', True),
+        ])
+        req_dims = {self._mat_norm(g) for g in (query_spec.get('groupby') or [])}
+        req_meas = set(query_spec.get('measures') or [])
+        for mat in candidates:
+            mat_dims = {self._mat_norm(d) for d in self._mat_paths_list(mat.dimension_paths)}
+            mat_meas = set(self._mat_meas_list(mat.measure_specs))
+            if req_dims.issubset(mat_dims) and (not req_meas or req_meas.issubset(mat_meas)):
+                return mat
+        return Mat.browse()
+
+    @api.model
+    def _mat_norm(self, token):
+        """Нормалізує токен виміру для порівняння накриття: базове поле без гранулярності."""
+        return str(token).split(':', 1)[0]
+
+    @api.model
+    def _mat_paths_list(self, paths):
+        """dimension_paths -> список рядків-шляхів (підтримує dict/list)."""
+        if isinstance(paths, dict):
+            paths = list(paths.values())
+        return [p for p in (paths or []) if isinstance(p, str)]
+
+    @api.model
+    def _mat_meas_list(self, specs):
+        """measure_specs -> список імен мір (рядки або dict із 'name'/'field')."""
+        if isinstance(specs, dict):
+            specs = list(specs.values())
+        out = []
+        for s in (specs or []):
+            if isinstance(s, str):
+                out.append(s)
+            elif isinstance(s, dict):
+                name = s.get('name') or s.get('field')
+                if name:
+                    out.append(name)
+        return out
 
     # =========================================================================
     # === DSL-компілятор формул (AC-09, AC-10, AC-13) =========================
