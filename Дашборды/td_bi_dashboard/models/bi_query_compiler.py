@@ -110,7 +110,11 @@ class TdBiQueryCompiler(models.AbstractModel):
             levels.append(domain)
         eff_domain = self._build_effective_domain(levels)
 
-        # Кумулятивний часовий інтелект (ytd/qtd/mtd): звузити вікно дати до поточного
+        # Зберігаємо «сирий» домен ДО to-date scoping — потрібен для KPI-порівняння
+        # (другий запит по зсунутому вікну, без власне to-date звуження бази).
+        raw_eff_domain = eff_domain
+
+        # Кумулятивний часовий інтелект (ytd/qtd/mtd/rolling): звузити вікно дати до поточного
         # періоду-до-сьогодні (межі обчислюються у tz користувача, AC-17). Якщо жодна
         # запитана міра не кумулятивна або немає поля-дати — no-op.
         eff_domain = self._apply_to_date_domain(dataset, spec, eff_domain)
@@ -174,6 +178,9 @@ class TdBiQueryCompiler(models.AbstractModel):
         # Виконується ПІСЛЯ _postprocess_rows: працює над значеннями, вже сконвертованими
         # за валютою; __extra_domain груп уже проставлено (drill не порушено).
         rows = self._apply_time_intelligence(dataset, spec, rows, groupby, measure_meta)
+        # KPI-порівняння (без виміру-дати у groupby): пріор-значення другим запитом по
+        # зсунутому вікну (period-to-date зсунутий назад на comparison). // AC-42 (KPI)
+        rows = self._apply_kpi_comparison(model, dataset, spec, raw_eff_domain, rows, groupby, measure_meta)
         return {
             'rows': rows,
             'groupby': groupby,
@@ -300,23 +307,26 @@ class TdBiQueryCompiler(models.AbstractModel):
             having=having or [], order=order, limit=limit, offset=offset,
         )
         totals = model.formatted_read_group(dom_list, groupby=[], aggregates=aggregates)
-        rows = self._apply_show_as(dataset, measure_meta, rows, totals)
+        rows = self._apply_show_as(dataset, measure_meta, rows, totals, groupby=groupby)
         rows = self._postprocess_rows(model, dataset, query_spec, rows, groupby, measure_meta, eff_domain)
         return {'rows': rows, 'groupby': groupby, 'grouping_sets': True,
                 'measures': [m['name'] for m in measure_meta],
                 'domain': dom_list}
 
     @api.model
-    def _apply_show_as(self, dataset, measure_meta, rows, totals):
+    def _apply_show_as(self, dataset, measure_meta, rows, totals, groupby=None):
         """Похідні показники на сервері (fallback без нативних GROUPING SETS):
         - percent_of_total: значення / загальний підсумок (AC-55; знаменник 0/NULL -> NULL, AC-11);
+        - percent_of_dimension: частка в межах партиції зовнішніх вимірів (усі groupby крім
+          останнього); для одного groupby збігається з percent_of_total;
         - running_total: накопичувальний підсумок за поточним порядком рядків;
         - rank: ранг за спаданням значення (competition: 1,2,2,4; 1 — найбільше).
-        Похідні колонки: <value_key>_pct / _running / _rank.
+        Похідні колонки: <value_key>_pct / _pct_dim / _running / _rank.
 
         Значення читаємо за value_key (просте поле приходить під '<path>:<agg>', НЕ під
         назвою міри — раніше читання за name давало None і ламало percent_of_total)."""
         rows = rows or []
+        groupby = groupby or []
         total_by_measure = {}
         if totals:
             for entry in measure_meta:
@@ -324,7 +334,7 @@ class TdBiQueryCompiler(models.AbstractModel):
                 total_by_measure[entry['name']] = totals[0].get(vk)
         for entry in measure_meta:
             show_as = entry['measure'].show_as
-            if show_as not in ('percent_of_total', 'running_total', 'rank'):
+            if show_as not in ('percent_of_total', 'percent_of_dimension', 'running_total', 'rank'):
                 continue
             vk = entry.get('value_key', entry['name'])
             if show_as == 'percent_of_total':
@@ -332,6 +342,20 @@ class TdBiQueryCompiler(models.AbstractModel):
                 for row in rows:
                     value = row.get(vk)
                     row[vk + '_pct'] = None if (value is None or not denom) else value / denom
+            elif show_as == 'percent_of_dimension':
+                # Партиція — усі groupby крім останнього (внутрішнього) виміру.
+                part_keys = list(groupby)[:-1]
+                sums = {}
+                for row in rows:
+                    pk = tuple(self._partition_value(row.get(g)) for g in part_keys)
+                    v = row.get(vk)
+                    if isinstance(v, (int, float)):
+                        sums[pk] = sums.get(pk, 0) + v
+                for row in rows:
+                    pk = tuple(self._partition_value(row.get(g)) for g in part_keys)
+                    value = row.get(vk)
+                    denom = sums.get(pk)
+                    row[vk + '_pct_dim'] = None if (value is None or not denom) else value / denom
             elif show_as == 'running_total':
                 cum = 0
                 for row in rows:
@@ -350,6 +374,13 @@ class TdBiQueryCompiler(models.AbstractModel):
                         rank, prev = i + 1, v
                     r[vk + '_rank'] = rank
         return rows
+
+    @api.model
+    def _partition_value(self, group_value):
+        """Нормалізує значення виміру для ключа партиції (m2o [id,label] -> id; tuple -> [0])."""
+        if isinstance(group_value, (list, tuple)) and group_value:
+            return group_value[0]
+        return group_value
 
     # =========================================================================
     # === Часовий інтелект: порівняння періодів у межах серії (AC-42/43) ======
@@ -423,6 +454,59 @@ class TdBiQueryCompiler(models.AbstractModel):
                     row[vkey + '__delta_pct'] = (
                         (cur_val - prior_val) / prior_val if prior_val else None
                     )
+        return rows
+
+    @api.model
+    def _apply_kpi_comparison(self, model, dataset, query_spec, raw_eff_domain, rows, groupby, measure_meta):
+        """KPI-порівняння БЕЗ виміру-дати у groupby: пріор-значення обчислюється ДРУГИМ
+        formatted_read_group по зсунутому period-to-date вікну (ВІД ІМЕНІ користувача — RLS у
+        WHERE; без sudo). Застосовується лише до простих мір, що мають І кумулятивний ti
+        (ytd/qtd/mtd — щоб база була to-date-звужена), І comparison: «YTD цьогоріч проти YTD торік».
+        Within-series випадок (date-groupby) обробляє _apply_time_intelligence — тут пропускаємо."""
+        requested = query_spec.get('measures') or []
+        if not requested or not rows:
+            return rows
+        if any(self._is_date_groupby(dataset, g) for g in (groupby or [])):
+            return rows  # within-series уже обробив
+        date_field = dataset.date_field_default
+        if not date_field:
+            return rows
+        for entry in measure_meta:
+            m = entry['measure']
+            if m.expression:
+                continue  # DSL-міри у KPI-порівнянні — пізніше
+            ti = m.time_intelligence if (m.time_intelligence and m.time_intelligence != 'none') else None
+            if ti not in ('ytd', 'qtd', 'mtd'):
+                continue  # потрібне визначене поточне вікно (база має бути to-date-звужена)
+            cmp_ = m.comparison if (m.comparison and m.comparison != 'none') else None
+            if not cmp_ and m.show_as in ('diff_prev', 'diff_prev_pct'):
+                cmp_ = 'prev_year'
+            if not cmp_:
+                continue
+            start_str, now_str = self._to_date_bounds(ti, dataset.fiscalyear_offset or 0)
+            shift = self._ti_shift(cmp_, None, m.rolling_n or 1)
+            prior_start = self._shift_period_key(start_str, shift)
+            prior_end = self._shift_period_key(now_str, shift)
+            if not (prior_start and prior_end):
+                continue
+            prior_dom = self._build_effective_domain([
+                raw_eff_domain, [(date_field, '>=', prior_start), (date_field, '<=', prior_end)]])
+            vk = entry['value_key']
+            try:
+                prior_rows = model.formatted_read_group(
+                    self._domain_as_list(prior_dom), groupby=[], aggregates=[vk])
+            except Exception:  # noqa: BLE001 — пріор-запит не має валити віджет (AC-52)
+                prior_rows = []
+            prior_val = prior_rows[0].get(vk) if prior_rows else None
+            for row in rows:
+                cur = row.get(vk)
+                row[vk + '__prior'] = prior_val
+                if cur is None or prior_val is None:
+                    row[vk + '__delta'] = None
+                    row[vk + '__delta_pct'] = None
+                else:
+                    row[vk + '__delta'] = cur - prior_val
+                    row[vk + '__delta_pct'] = (cur - prior_val) / prior_val if prior_val else None
         return rows
 
     @api.model
@@ -523,10 +607,15 @@ class TdBiQueryCompiler(models.AbstractModel):
         requested = query_spec.get('measures') or []
         if not requested:
             return eff_domain
-        mode = None
+        mode, roll_n = None, 0
         for m in dataset.measure_ids:
-            if (m.name in requested or m.id in requested) and m.time_intelligence in ('ytd', 'qtd', 'mtd'):
+            if not (m.name in requested or m.id in requested):
+                continue
+            if m.time_intelligence in ('ytd', 'qtd', 'mtd'):
                 mode = m.time_intelligence
+                break
+            if m.time_intelligence == 'rolling' and (m.rolling_n or 0) > 0:
+                mode, roll_n = 'rolling', m.rolling_n
                 break
         if not mode:
             return eff_domain
@@ -538,14 +627,15 @@ class TdBiQueryCompiler(models.AbstractModel):
                     break
         if not date_field:
             return eff_domain  # немає якоря дати -> no-op (не падаємо)
-        start_str, now_str = self._to_date_bounds(mode, dataset.fiscalyear_offset or 0)
+        start_str, now_str = self._to_date_bounds(mode, dataset.fiscalyear_offset or 0, roll_n)
         leaf = [(date_field, '>=', start_str), (date_field, '<=', now_str)]
         return self._build_effective_domain([eff_domain, leaf])
 
     @api.model
-    def _to_date_bounds(self, mode, fiscalyear_offset):
+    def _to_date_bounds(self, mode, fiscalyear_offset, rolling_n=0):
         """Межі періоду-до-сьогодні у tz користувача -> UTC-рядки для домену.
-        ytd — з 1 січня (+ fiscalyear_offset міс.); qtd — з початку кварталу; mtd — з 1-го числа."""
+        ytd — з 1 січня (+ fiscalyear_offset міс.); qtd — з початку кварталу; mtd — з 1-го числа;
+        rolling — ковзне вікно [сьогодні − rolling_n міс. .. зараз]."""
         tzname = self.env.context.get('tz') or self.env.user.tz or 'UTC'
         try:
             tz = pytz.timezone(tzname)
@@ -554,7 +644,9 @@ class TdBiQueryCompiler(models.AbstractModel):
         now_utc = fields.Datetime.now()  # наївний UTC
         now_local = pytz.UTC.localize(now_utc).astimezone(tz)
         base = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
-        if mode == 'mtd':
+        if mode == 'rolling':
+            start_local = base - relativedelta(months=max(1, int(rolling_n or 1)))
+        elif mode == 'mtd':
             start_local = base.replace(day=1)
         elif mode == 'qtd':
             q_month = ((now_local.month - 1) // 3) * 3 + 1

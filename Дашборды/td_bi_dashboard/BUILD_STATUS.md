@@ -264,4 +264,21 @@
 
 **Тести:** новий `tests/test_show_as.py` (3 кейси на UA=3/PL=2/DE=1): percent_of_total (UA=0.5, сума=1.0), running_total (макс=6, монотонний), rank (UA=1/PL=2/DE=3). **Усього 45/45 тести зелені**, без регресій.
 
-**Відкладено:** `percent_of_dimension` (знаменник за партицією виміру); нативний GROUPING SETS-батч після звірки сигнатури 19.0.
+**Відкладено:** нативний GROUPING SETS-батч після звірки сигнатури 19.0.
+
+
+---
+
+## ✅ STAGE-2 #6: ДОВЕРШЕННЯ АНАЛІТИЧНОГО ДВИГУНА — 2026-06-13/14
+
+Закрито три залишки часового інтелекту/show_as (усе серверне, тести швидкі):
+
+- **percent_of_dimension** — частка в межах партиції зовнішніх вимірів (усі groupby крім останнього); для одного groupby == percent_of_total. Колонка `<vk>_pct_dim`. (+ хелпер `_partition_value`).
+- **rolling** (`time_intelligence='rolling'`, `rolling_n`) — ковзне вікно `[сьогодні − rolling_n міс. .. зараз]`; розширено `_apply_to_date_domain`/`_to_date_bounds`.
+- **KPI-порівняння без groupby** (`_apply_kpi_comparison`) — для міри з кумулятивним ti (ytd/qtd/mtd) + comparison: пріор-значення ДРУГИМ `formatted_read_group` по period-to-date вікну, зсунутому назад (ВІД ІМЕНІ користувача — RLS; «YTD цьогоріч проти YTD торік»). Within-series випадок (date-groupby) лишається за `_apply_time_intelligence`. `raw_eff_domain` зберігається до to-date scoping для коректного пріор-запиту.
+
+**Тести:** +3 кейси (rolling=3-у-вікні, KPI YoY: база 3/пріор 2/Δ +50%, percent_of_dimension UA=0.5). **Усього 48/48 зелені**, без регресій.
+
+**Підсумок аналітичного двигуна:** агрегації, ratio-DSL, фільтровані міри, мультивалютність, time-intelligence (within-series YoY/PoP/custom + cumulative YTD/QTD/MTD/rolling + KPI-порівняння), show_as (pct / pct_dim / running_total / rank), бленди (CTE+RLS) — усе реалізовано й перевірено на живій Odoo 19.
+
+**Залишок дорожньої карти (великі, окремими підходами):** матеріалізація read-path (AC-62/63); підписки/алерти cron-тіла (AC-33/34/35/61); заморожені публічні посилання + XLSX/PDF експорт (AC-26/27/29-32/36/37, controllers/main.py); right/full/cross + DSL-міри у бленді (Stage-3); нативний GROUPING SETS-батч.

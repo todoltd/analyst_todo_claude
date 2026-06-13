@@ -66,6 +66,18 @@ class TestShowAs(TransactionCase):
         self.assertEqual(max(running), 6, "Накопичений максимум == загальна кількість (6).")
         self.assertEqual(running, sorted(running), "Накопичувальний підсумок монотонно зростає.")
 
+    # --- percent_of_dimension: один рівень groupby -> партиція = весь набір (== % від підсумку) ---
+    def test_percent_of_dimension_single_level(self):
+        m = self.env['td.bi.measure'].create({
+            'dataset_id': self.ds.id, 'name': 'PCTDIM', 'field_id': self.f_cnt.id,
+            'aggregator': 'count', 'show_as': 'percent_of_dimension'})
+        rows = self.ds.run_query({'groupby': ['country_id'], 'measures': [m.name]})['rows']
+        by = {(r['country_id'][0] if isinstance(r.get('country_id'), (list, tuple))
+               else r.get('country_id')): r for r in rows}
+        self.assertAlmostEqual(by[self.ua.id].get('id:count_pct_dim'), 0.5,
+                               msg="UA = 3/6 = 0.5 (партиція=набір при одному groupby).")
+        self.assertAlmostEqual(sum((r.get('id:count_pct_dim') or 0) for r in rows), 1.0)
+
     # --- rank: за спаданням; UA(3)=1, PL(2)=2, DE(1)=3 ---
     def test_rank(self):
         rows = self._rows('RANK')

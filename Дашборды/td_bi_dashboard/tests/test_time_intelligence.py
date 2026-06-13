@@ -141,7 +141,7 @@ class TestTimeIntelligence(TransactionCase):
             })
 
     # --- Допоміжне: окремий кумулятивний датасет + контакти з керованим create_date ---
-    def _cum_dataset(self, ti_mode, name):
+    def _cum_dataset(self, ti_mode, name, rolling_n=0, comparison='none'):
         ds = self.env['td.bi.dataset'].create({
             'name': name, 'mode': 'model', 'model_id': self.partner_model.id,
             'visibility': 'global', 'date_field_default': 'create_date',
@@ -155,10 +155,44 @@ class TestTimeIntelligence(TransactionCase):
             'field_type': 'integer', 'role': 'measure', 'aggregator': 'count',
         })
         m = self.env['td.bi.measure'].create({
-            'dataset_id': ds.id, 'name': 'M ' + ti_mode, 'field_id': fc.id,
+            'dataset_id': ds.id, 'name': 'M ' + name, 'field_id': fc.id,
             'aggregator': 'count', 'time_intelligence': ti_mode,
+            'rolling_n': rolling_n, 'comparison': comparison,
         })
         return ds, m
+
+    # --- Кумулятив ROLLING: ковзне вікно [сьогодні − rolling_n міс. .. зараз] ---
+    def test_ti_rolling_window(self):
+        now = fields.Datetime.now()
+        base = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        in_win = base                               # 1-ше цього місяця -> в межах 2-міс. вікна
+        out_win = base - relativedelta(months=6)    # 6 міс. тому -> поза вікном
+        ds, m = self._cum_dataset('rolling', 'Rolling ds', rolling_n=2)
+        ids = self._partners_dated([
+            (fields.Datetime.to_string(in_win), 3),
+            (fields.Datetime.to_string(out_win), 2),
+        ])
+        ds.domain = repr([('id', 'in', ids)])
+        res = ds.run_query({'groupby': [], 'measures': [m.name], 'aggregates': ['__count']})
+        self.assertEqual(res['rows'][0].get('__count'), 3,
+                         "Rolling 2 міс. рахує лише в межах вікна (3); старіші (2) виключено.")
+
+    # --- KPI-порівняння без groupby: YTD цьогоріч проти YTD торік (другий запит) ---
+    def test_ti_kpi_comparison_ytd_yoy(self):
+        now = fields.Datetime.now()
+        jan_this = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        jan_last = jan_this - relativedelta(years=1)
+        ds, m = self._cum_dataset('ytd', 'KPI YoY ds', comparison='prev_year')
+        ids = self._partners_dated([
+            (fields.Datetime.to_string(jan_this), 3),
+            (fields.Datetime.to_string(jan_last), 2),
+        ])
+        ds.domain = repr([('id', 'in', ids)])
+        row = ds.run_query({'groupby': [], 'measures': [m.name], 'aggregates': ['__count']})['rows'][0]
+        self.assertEqual(row.get('id:count'), 3, "База YTD цьогоріч = 3.")
+        self.assertEqual(row.get('id:count__prior'), 2, "Пріор YTD торік = 2 (другий запит).")
+        self.assertEqual(row.get('id:count__delta'), 1)
+        self.assertAlmostEqual(row.get('id:count__delta_pct'), 0.5)
 
     def _partners_dated(self, dated):
         Partner = self.env['res.partner']
