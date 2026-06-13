@@ -19,6 +19,10 @@ stable `AC-01` ids so traceability survives all the way to tests and PR review.
 > **Position in the chain:** runs once the ТР reaches «Погодження клієнта»
 > (registry: «Перелік технічних рішень»). Output feeds `architecture`.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Inputs required
 - Approved `ТР_[назва].md` (status «Погодження клієнта» / approved).
 - Odoo version — from the **project card** (18 / 19), not hardcoded.
@@ -65,6 +69,8 @@ Copy every AC from the ТР into the SPEC `Acceptance criteria` section.
 - Keep the `[US-XX]` link.
 - Carry over the ТР's "нещасливі шляхи" ACs (no data / error / rights / constraints).
 
+> 🔎 **KB (#80):** `search_knowledge_base("acceptance criteria Given When Then", project_ids=[analogs])` — samples of canonical AC wording from real approved ТР, as a formatting reference only.
+
 ### 4. Models — from «Опис технічної реалізації»
 Project the ТР technical-design section into the SPEC `Models` blocks:
 - Model header: `### {ModelName} (`td.{module}.{entity}`)`, `Inherits:`, `Since:`.
@@ -77,6 +83,8 @@ Project the ТР technical-design section into the SPEC `Models` blocks:
 - Preserve ToDo conventions: `td.*`, field prefix `td_*`, name mask `<Проект>: …`.
 - Anything the architect must still decide (DB-level structure the ТР left in the
   empty «АРХІТЕКТУРА» section) → leave for `architecture`, note under Open questions.
+
+> 🔎 **KB (#79):** `search_knowledge_base("[field] store compute поле", project_ids=[analogs])` — for ambiguous fields (store vs compute): how an analogous field was modeled in other projects' ТР; only to resolve ambiguity — the ТР stays the sole source of requirements.
 
 ### 5. Scope & open questions
 - `Out of scope`: copy the ТР scope boundaries (що винесено в наступне ТЗ).

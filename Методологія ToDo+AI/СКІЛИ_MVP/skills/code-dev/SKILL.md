@@ -16,6 +16,10 @@ description: >
 Implements one acceptance criterion at a time. Spec-locked: no code
 outside the spec scope is written. Every change is traceable to an AC number.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Pre-flight check
 
 Before writing any code:
@@ -44,6 +48,8 @@ implementation goes. If no marker exists, check ARCHITECTURE.md traceability
 table for where this AC should be implemented.
 
 ### 3. Implement — Odoo conventions
+
+> 🔎 **KB (#84):** `search_knowledge_base("[computation/rule] формула логіка", project_ids=[analogs])` — descriptions of analogous business logic (formulas, rules) from other projects' ТР — logic only, the KB holds no code.
 
 #### Model methods
 ```python
@@ -155,6 +161,8 @@ Odoo 17+ syntax (use `invisible=` not `attrs=`):
 
 ### 6. Error messages
 
+> 🔎 **KB (#85):** `search_knowledge_base("повідомлення про помилку користувачу", project_ids=[analogs])` — real user-facing UserError/ValidationError wordings from ТР and instructions.
+
 Always use `_()` for translatable strings:
 ```python
 # Good
@@ -182,6 +190,8 @@ partners = self.mapped('partner_id')
 ```
 
 ### 8. Spec discipline — hard rules
+
+> 🔎 **KB (#86):** `search_knowledge_base("[ambiguous point]", project_ids=[analogs])` — when the SPEC is silent, before escalating check whether the same dilemma was resolved in an analogous development (an argument for the proposal to the BA).
 
 **DO:**
 - Implement exactly what the AC says

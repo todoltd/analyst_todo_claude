@@ -22,6 +22,10 @@ Odoo 19 through the UI. It is the configuration counterpart of `SPEC.md` +
 > to **config** / **hybrid (config slice)**. Output `CONFIG.md` feeds
 > `config-runbook` (BA execution) and `config-review` (gate).
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Inputs required
 - Approved `SPEC.md` (AC-01 + Models / business logic).
 - `ALLOCATION.md` (from `build-allocator`) — which ACs are config / hybrid.
@@ -48,11 +52,15 @@ Odoo 19 capability**. Two non-negotiables:
 Keep all human-readable text **Ukrainian** (the BA executes it); keep `AC-NN`,
 technical names, and Odoo menu paths exact.
 
+> 🔎 **KB (#95):** `search_knowledge_base("[setting] меню шлях Odoo 19", project_ids=[analogs])` — verify menu/setting paths against real config descriptions and training materials of Odoo 19 projects in the KB.
+
 ## Process — fill `CONFIG.md` by area
 
 Use `references/config-template.md`. Only include areas that have config ACs;
 mark empty areas `None`. For each item: **what to set → exact UI path → expected
 result → `[AC-NN]` → source.**
+
+> 🔎 **KB (#96):** `search_knowledge_base("[area] налаштування таблиця", project_ids=[analogs])` — real settings tables of similar implementations (same module mix) — a ready structure of values per area.
 
 ### 1. Header & meta
 - `Status`: **approved** (inherited from the approved ТР/SPEC — §8, no AI self-approval).
@@ -93,6 +101,8 @@ settings, `[AC-NN]`.
 ### 11. Hybrid hand-shake
 For each hybrid AC: name the **code slice** this config depends on (model/field/method
 from SPEC), so config-runbook sequences config after the module is deployed.
+
+> 🔎 **KB (#97):** `search_knowledge_base("hybrid config залежність від модуля", project_ids=[analogs])` — examples of describing the config slice's dependency on the code slice in analogous projects.
 
 ### 12. Out of scope & open questions
 - `Out of scope`: copy SPEC boundaries relevant to config.

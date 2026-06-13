@@ -15,6 +15,10 @@ Structured review that enforces **config-spec compliance** for Track 2, the way
 `pr-review` enforces it for code. Outputs a verdict
 (APPROVE / REQUEST CHANGES / BLOCK) with specific, per-`AC-NN` findings.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## ToDo — еталон і межі
 - `CONFIG.md` is the projection of the **approved ТР/SPEC**; "config compliance" =
   the live Odoo state matches `CONFIG.md`. If `CONFIG.md` and ТР disagree, the ТР
@@ -66,6 +70,9 @@ Fix: re-configure to match, or update CONFIG.md and get approval.
 ---
 
 ### Dimension 3 — Odoo 19 validity (BLOCK if invented; else REQUEST CHANGES)
+
+> 🔎 **KB (#101):** `search_knowledge_base("[setting] Odoo 19 налаштування", project_ids=[analogs])` — cross-check disputed menus/settings against real config documents of Odoo 19 projects (has anyone actually configured this).
+
 - [ ] Every item uses a **real** Odoo 19 capability in the target edition (path resolves)
 - [ ] Each `CONFIG.md` item still carries its Odoo 19 source; the path matches the live menu
 - [ ] No setting was "approximated" onto a different menu because the specified one does not exist
@@ -76,6 +83,9 @@ Fix: re-configure to match, or update CONFIG.md and get approval.
 ---
 
 ### Dimension 4 — Evidence & config-log (REQUEST CHANGES if failed)
+
+> 🔎 **KB (#102):** `search_knowledge_base("експорт доказ налаштування акт", project_ids=[analogs])` — reference examples of "sufficient evidence" (exports, screenshots, acts) from past projects — calibrates the config-log requirements.
+
 - [ ] `config-log.md` is complete — every runbook step has a status + actual value
 - [ ] Exportable items (automation, server actions, templates, cron, `ir.config_parameter`)
       have an export reference attached, not just a screenshot

@@ -16,6 +16,10 @@ Produces a SPEC.md for an existing Odoo module by reading all its source
 files. This is always step 1R in the SDD workflow — run before writing
 any new requirements.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## When to use
 - Module directory exists but has no SPEC.md
 - Developer wants to add a new feature to an existing module
@@ -47,6 +51,8 @@ Read in this order:
 
 ### 2. Extract facts — do not invent
 
+> 🔎 **KB (#76):** `find_documents(project_id=[client], name_contains="ТР")` — the historical ТР of this same module in the client's scope: original requirements/AC for a module that has no SPEC.
+
 For each model found:
 - Class name, `_name`, `_inherit`, `_description`
 - Every field: name, type, `string`, `required`, `readonly`, `compute`,
@@ -76,6 +82,9 @@ For integrations:
 
 Use the canonical template below. Fill every section honestly.
 If information is missing from the code, write `# TODO: verify` — do not guess.
+
+> 🔎 **KB (#77):** `search_knowledge_base("[module domain] бізнес-логіка", project_ids=[analogs])` — descriptions of analogous modules from other projects' ТР help phrase the Business purpose precisely without inventing.
+> 🔎 **KB (#78):** `search_knowledge_base("[module] обмеження проблеми", project_ids=[client])` — known limitations/tech debt of this module may already be recorded in the client's protocols and status meetings → Known limitations.
 
 **Version tracking rule for reverse-spec:** Read the `version` key from `__manifest__.py`.
 Set `{current_manifest_version}` to that exact value everywhere in the template. This marks

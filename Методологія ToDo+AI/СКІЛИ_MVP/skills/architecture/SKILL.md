@@ -15,6 +15,10 @@ description: >
 Translates an approved SPEC.md into a concrete ARCHITECTURE.md that Claude Code
 and Cursor can use directly for scaffolding and development.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Pre-flight check
 
 Before writing anything:
@@ -52,6 +56,8 @@ No access to sources → mark the point "потребує звірки з Odoo 1
 ## Process
 
 ### 1. Derive the file structure
+
+> 🔎 **KB (#81):** `search_knowledge_base("структура модуля [entity type]", project_ids=[analogs])` — structure patterns of analogous td-modules from ТР/architecture descriptions, for choosing a pattern on non-typical modules.
 
 From models in SPEC.md, generate the exact directory tree:
 
@@ -128,6 +134,8 @@ Every AC from SPEC.md must map to at least one of:
 - A security rule (access control)
 - A test case (in testing phase)
 
+> 🔎 **KB (#82):** `search_knowledge_base("AC реалізація трасування", project_ids=[analogs])` — examples of AC-to-implementation traceability from ТР where the realization section is detailed.
+
 Create a traceability table in ARCHITECTURE.md:
 
 | AC | Implementation location | Type |
@@ -169,6 +177,8 @@ Be explicit about what goes in `depends`:
 ```
 
 Do not add dependencies not justified by the spec.
+
+> 🔎 **KB (#83):** `search_knowledge_base("залежності depends модуль", project_ids=[analogs])` — how non-trivial `depends` choices were justified in analogous developments.
 
 ### 6. Plan migrations (existing module only)
 

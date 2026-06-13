@@ -15,6 +15,10 @@ description: >
 Structured code review that enforces SDD spec compliance and Odoo conventions.
 Outputs a verdict (APPROVE / REQUEST CHANGES / BLOCK) with specific issues.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## ToDo — еталон і межі
 - `SPEC.md` is the projection of the **approved ТР**; "spec compliance" = compliance
   with the approved ТР (its AC + «Опис технічної реалізації»). If SPEC and ТР disagree,
@@ -38,6 +42,8 @@ Run all five dimensions. Each produces a verdict and a list of findings.
 ### Dimension 1 — Spec compliance (BLOCK if failed)
 
 The most important check. Code must not deviate from the approved spec.
+
+> 🔎 **KB (#91):** `search_knowledge_base("[deviation type] відхилення погоджено", project_ids=[analogs])` — for disputed spots: whether deviations of this type were accepted before and how they were justified (precedents for REQUEST CHANGES vs APPROVE).
 
 **Check for each changed model file:**
 - [ ] No new fields that are not in SPEC.md
@@ -68,6 +74,8 @@ Fix: Either revert the code change or update SPEC.md and get approval.
 ---
 
 ### Dimension 3 — Odoo conventions (REQUEST CHANGES if failed)
+
+> 🔎 **KB (#90):** `search_knowledge_base("Odoo 19 deprecated attrs list view", project_ids=[analogs])` — real Odoo 19 project practice in the KB (ТР, training materials) confirming version-specific notes (deprecated `attrs` etc.).
 
 **Model conventions:**
 - [ ] `_description` present and non-empty

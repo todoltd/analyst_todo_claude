@@ -20,6 +20,10 @@ place the routing is decided, so the two tracks never overlap or leave a gap.
 > `spec-writer`. Output `ALLOCATION.md` feeds **both** `architecture`
 > (Track 1, code ACs) and `config-spec` (Track 2, config ACs).
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Inputs required
 - Approved `SPEC.md` (status `approved`; AC-01 ids + Models / «Опис технічної реалізації»).
 - Odoo version — from the **project card** (18 / 19), not hardcoded.
@@ -34,6 +38,8 @@ place the routing is decided, so the two tracks never overlap or leave a gap.
 
 Classify each AC by the **cheapest faithful** realization. Default bias: **prefer
 configuration** — only route to code what configuration genuinely cannot do.
+
+> 🔎 **KB (#92):** `search_knowledge_base("[function] налаштування чи доробка", project_ids=[analogs])` — for non-obvious ACs: precedents of how the same need was closed in similar projects — by configuration or by a `td.*` module.
 
 | Realize as | When | Examples |
 |---|---|---|
@@ -52,6 +58,8 @@ capability actually exists in the target Odoo 19 edition. Cite the source
 (`довідник §N` / URL). Do not assume a setting exists — an invented config path is
 the main failure mode of Track 2. If unsure it is standard → route to **code** or **hybrid**.
 
+> 🔎 **KB (#93):** `search_knowledge_base("[feature] Odoo 19 налаштування Studio", project_ids=[analogs])` — confirm the capability really exists via ТР and config documents of Odoo 19 projects; the official docs remain the primary source — the KB is real-world evidence.
+
 ## Process
 
 ### 1. Enumerate every AC
@@ -63,6 +71,9 @@ Apply the decision rule. For `hybrid`, split the AC into a **config slice** and 
 **code slice** in the Notes column (both keep the same `AC-NN` id — one namespace).
 
 ### 3. Cross-check against SPEC Models
+
+> 🔎 **KB (#94):** `search_knowledge_base("гібрид config code розподіл AC", project_ids=[analogs])` — how hybrid (config + code) ACs were split in analogous projects.
+
 Each `td.*` model / custom field in SPEC «Models» must be claimed by at least one
 `code` or `hybrid` AC. A custom model with no code/hybrid AC → flag (drift between
 SPEC tech-design and the ACs).

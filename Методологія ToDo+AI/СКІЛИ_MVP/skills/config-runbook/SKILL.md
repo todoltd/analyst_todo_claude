@@ -19,6 +19,10 @@ as they go. The runbook makes configuration *reproducible*; the log makes it
 > **Position in the chain:** runs after `config-spec`. Output
 > `CONFIG_RUNBOOK.md` + `config-log.md` feeds `config-review` (the gate).
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Inputs required
 - `CONFIG.md` (from `config-spec`) — config items with UI paths + `[AC-NN]` + sources.
 - For hybrid ACs: confirmation that the **code slice** (its `td.*` module) is **deployed**
@@ -31,6 +35,8 @@ as they go. The runbook makes configuration *reproducible*; the log makes it
 - [ ] Hybrid dependencies identified (which steps wait for a deployed module).
 
 ## Sequencing rule
+
+> 🔎 **KB (#98):** `search_knowledge_base("порядок кроків налаштування впровадження", project_ids=[analogs])` — the real step order from past implementations (Apps → Settings → data → automations) — dependency sequences verified in practice.
 
 Order steps by dependency, not by CONFIG.md area order:
 
@@ -57,6 +63,8 @@ Carry the `[AC-NN]` and Odoo 19 source onto each step.
 Each step has: **action** (imperative, exact UI path), **expected result**
 (what the BA should see — the per-step verification), `[AC-NN]`, and a **log slot**.
 
+> 🔎 **KB (#99):** `search_knowledge_base("покрокова інструкція налаштування", project_ids=[analogs])` — real step-by-step instructions/training materials from the KB: step wording plus the "what you should see" verification.
+
 ```markdown
 ### Крок {n} — {короткий заголовок}  [AC-NN]
 **Дія:** {App} ▸ {Menu} ▸ {…} → {що зробити}.
@@ -70,6 +78,8 @@ Use `references/config-log-template.md`. The BA fills it during execution: per s
 — done/skipped, the actual value set, date, and (where the setting supports it) an
 **export reference** (e.g. exported `base.automation` / `mail.template` XML, or the
 `ir.config_parameter` key=value) as hard evidence for the gate.
+
+> 🔎 **KB (#100):** `find_documents(name_contains="журнал налаштувань", project_ids=[client, analogs])` — examples of filled config-logs/acts: what counts as sufficient evidence of applied configuration.
 
 ### 4. Coverage check
 Every config/hybrid-config AC in `CONFIG.md` must appear in at least one runbook step.

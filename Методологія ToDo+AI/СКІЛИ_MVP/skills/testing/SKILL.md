@@ -15,11 +15,17 @@ description: >
 Generates tests that are directly traceable to SPEC.md acceptance criteria.
 One test method per AC. Tests are the final verification gate before deployment.
 
+**Knowledge Base connector (optional, when the KB MCP connector is available):**
+- Tools: `list_projects` · `find_documents` · `search_knowledge_base(query, project_ids)` · `get_documents` · `get_document_parts`.
+- Rules: always scope with `project_ids`; never copy sensitive data from other clients' scopes (client names, amounts, rates) into deliverables; prefer the freshest version (`modified_at`); connector unavailable / no hits → proceed without it (enhancement, not dependency); the KB holds documents and transcripts only — NO code; KB gives patterns and calibration — content is always authored for the current project.
+
 ## Зв'язок із ТР (ToDo)
 These automated tests are the code realization of the ТР's «Тестовий сценарій» /
 «Протокол тестування». One test per **canonical `AC-01`** id (method `test_ac01_…`),
 so the AC spine stays intact ТР → SPEC → code → tests. The «AC coverage audit»
 table below is the acceptance checkpoint for the build.
+
+> 🔎 **KB (#87):** `find_documents(project_id=[client], name_contains="ТР")` → the «Інструкція»/test protocol from this same client's ТР (or an analogous project's) — a ready basis for test cases on top of the AC.
 
 ## Test file location
 
@@ -35,6 +41,8 @@ td_{module}/
 ## Base test class (`tests/common.py`)
 
 Always create a shared base class to avoid setup duplication:
+
+> 🔎 **KB (#88):** `search_knowledge_base("тестові дані інструкція", project_ids=[client])` — which test data (partners, warehouses, roles) earlier instructions of this client described — realistic fixtures.
 
 ```python
 # -*- coding: utf-8 -*-
@@ -236,6 +244,8 @@ def test_ac_multicompany_rule(self):
 ```
 
 ## AC coverage audit
+
+> 🔎 **KB (#89):** `search_knowledge_base("матриця покриття AC тест", project_ids=[analogs])` — examples of AC↔test coverage matrices from previous projects.
 
 After writing tests, verify every AC is covered:
 

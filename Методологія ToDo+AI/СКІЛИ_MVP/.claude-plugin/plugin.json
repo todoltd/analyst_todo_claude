@@ -1,6 +1,6 @@
 {
   "name": "odoo19-mvp-build",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Методологія етапу MVP / БІЛД для Odoo 19: SDD-ланцюжок від затвердженого ТР до перевіреного MVP, два треки на спільному AC-01 — код (spec-writer → architecture → scaffolding → code-dev → testing → pr-review) і конфігурація БА через UI (build-allocator → config-spec → config-runbook → config-review).",
   "author": {
     "name": "ToDo"
