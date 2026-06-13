@@ -289,46 +289,66 @@ class TdBiQueryCompiler(models.AbstractModel):
         """% від підсумку / часовий інтелект одним SQL через GROUPING SETS (AC-42/43/55).
         Детальні рядки + загальний підсумок одним запитом; ділення на сервері (AC-55)."""
         dom_list = self._domain_as_list(eff_domain)
-        grouping_sets = query_spec.get('grouping_sets') or [groupby, []]  # детальні + підсумок
-        # DEVIATION(Odoo19): підтвердити точну назву/сигнатуру публічного методу
-        # `formatted_read_grouping_sets` (GROUPING SETS одним викликом) на збірці 19.0.
-        method = getattr(model, 'formatted_read_grouping_sets', None)
-        if method is None:
-            # Запасний шлях: два formatted_read_group (детальні + загальний підсумок);
-            # ділення «% від підсумку» на сервері тут (числово ідентично GROUPING SETS).
-            rows = model.formatted_read_group(
-                dom_list, groupby=groupby, aggregates=aggregates,
-                having=having or [], order=order, limit=limit, offset=offset,
-            )
-            totals = model.formatted_read_group(dom_list, groupby=[], aggregates=aggregates)
-            rows = self._apply_show_as(dataset, measure_meta, rows, totals)
-            rows = self._postprocess_rows(model, dataset, query_spec, rows, groupby, measure_meta, eff_domain)
-            return {'rows': rows, 'groupby': groupby, 'grouping_sets': True,
-                    'measures': [m['name'] for m in measure_meta],
-                    'domain': dom_list}
-        result = method(dom_list, grouping_sets, aggregates, order=order, limit=limit, offset=offset)
-        rows = self._postprocess_rows(model, dataset, query_spec, result, groupby, measure_meta, eff_domain)
+        # DEVIATION(Odoo19): нативний `formatted_read_grouping_sets` існує на збірці, але його
+        # точна сигнатура не підтверджена І він не дав би місця для пост-обробки show_as
+        # (percent_of_total/running_total/rank). Тому використовуємо ПЕРЕВІРЕНИЙ шлях:
+        # два formatted_read_group (детальні + підсумок) ВІД ІМЕНІ користувача + _apply_show_as.
+        # Числово ідентично GROUPING SETS; RLS/ACL зберігаються. Нативний батч — оптимізація
+        # на потім (після звірки сигнатури 19.0).
+        rows = model.formatted_read_group(
+            dom_list, groupby=groupby, aggregates=aggregates,
+            having=having or [], order=order, limit=limit, offset=offset,
+        )
+        totals = model.formatted_read_group(dom_list, groupby=[], aggregates=aggregates)
+        rows = self._apply_show_as(dataset, measure_meta, rows, totals)
+        rows = self._postprocess_rows(model, dataset, query_spec, rows, groupby, measure_meta, eff_domain)
         return {'rows': rows, 'groupby': groupby, 'grouping_sets': True,
-                'measures': [m['name'] for m in measure_meta], 'domain': dom_list}
+                'measures': [m['name'] for m in measure_meta],
+                'domain': dom_list}
 
     @api.model
     def _apply_show_as(self, dataset, measure_meta, rows, totals):
-        """% від підсумку: ділення кожного рядка на загальний підсумок на сервері (AC-55).
-        Ділення на нуль/NULL -> NULL (AC-11). Stage-1 fallback-шлях без нативних GROUPING SETS."""
+        """Похідні показники на сервері (fallback без нативних GROUPING SETS):
+        - percent_of_total: значення / загальний підсумок (AC-55; знаменник 0/NULL -> NULL, AC-11);
+        - running_total: накопичувальний підсумок за поточним порядком рядків;
+        - rank: ранг за спаданням значення (competition: 1,2,2,4; 1 — найбільше).
+        Похідні колонки: <value_key>_pct / _running / _rank.
+
+        Значення читаємо за value_key (просте поле приходить під '<path>:<agg>', НЕ під
+        назвою міри — раніше читання за name давало None і ламало percent_of_total)."""
+        rows = rows or []
         total_by_measure = {}
         if totals:
             for entry in measure_meta:
-                total_by_measure[entry['name']] = totals[0].get(entry['name'])
+                vk = entry.get('value_key', entry['name'])
+                total_by_measure[entry['name']] = totals[0].get(vk)
         for entry in measure_meta:
-            if entry['measure'].show_as != 'percent_of_total':
+            show_as = entry['measure'].show_as
+            if show_as not in ('percent_of_total', 'running_total', 'rank'):
                 continue
-            denom = total_by_measure.get(entry['name'])
-            for row in rows:
-                value = row.get(entry['name'])
-                if value is None or not denom:  # AC-11: знаменник 0/NULL -> NULL, не помилка
-                    row[entry['name'] + '_pct'] = None
-                else:
-                    row[entry['name'] + '_pct'] = value / denom
+            vk = entry.get('value_key', entry['name'])
+            if show_as == 'percent_of_total':
+                denom = total_by_measure.get(entry['name'])
+                for row in rows:
+                    value = row.get(vk)
+                    row[vk + '_pct'] = None if (value is None or not denom) else value / denom
+            elif show_as == 'running_total':
+                cum = 0
+                for row in rows:
+                    value = row.get(vk)
+                    if isinstance(value, (int, float)):
+                        cum += value
+                    row[vk + '_running'] = cum
+            elif show_as == 'rank':
+                ordered = sorted(
+                    [r for r in rows if isinstance(r.get(vk), (int, float))],
+                    key=lambda r: r.get(vk), reverse=True)
+                rank, prev = 0, object()
+                for i, r in enumerate(ordered):
+                    v = r.get(vk)
+                    if v != prev:
+                        rank, prev = i + 1, v
+                    r[vk + '_rank'] = rank
         return rows
 
     # =========================================================================

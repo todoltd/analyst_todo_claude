@@ -247,3 +247,21 @@
 **Демо + наживо:** бленд-датасет «BI: Демо — Бленд (контакти × країни)» (res.partner ⟕ res.country за country_id=id) + таблиця-віджет. Shell на живій БД: UA→4, PL→2, None→2, DE→1 (8-й віджет на дашборді).
 
 **Відкладено (бекап):** right/full/cross (Stage-3); DSL-міри у бленді; date-granularity виміри у бленді (tz-bucket); m2o-вимір повертає id (без (id,label)) — фронт резолвить лейбл; матеріалізація read-path (AC-62).
+
+
+---
+
+## ✅ STAGE-2 #5: ПОХІДНІ ПОКАЗНИКИ show_as — running_total / rank / % (AC-55) — 2026-06-13
+
+Реалізовано похідні показники як ПОСТ-ОБРОБКУ над RLS-безпечними рядками (без SQL-вікон — простіше й еквівалентно для preview-наборів):
+- `percent_of_total` → `<value_key>_pct` (значення/підсумок; /0|NULL→NULL);
+- `running_total` → `<value_key>_running` (накопичувальний за порядком рядків);
+- `rank` → `<value_key>_rank` (competition-ранг за спаданням; 1 — найбільше).
+
+**Виправлено реальний латентний дефект:** `_apply_show_as` читав значення за `entry['name']` (назва міри), хоча просте поле приходить під `value_key` (`'<path>:<agg>'`, напр. `id:count`) → percent_of_total мовчки писав None. Тепер читання за `value_key` (з'явився у `measure_meta` під час часового інтелекту).
+
+**Зміни (`bi_query_compiler.py`):** `_apply_show_as` розширено (pct + running + rank, за value_key); `_compile_grouping_sets` тепер ЗАВЖДИ йде перевіреним fallback-шляхом (два `formatted_read_group` від імені користувача + `_apply_show_as`) — нативний `formatted_read_grouping_sets` на цій збірці існує, але сигнатура не підтверджена І він не лишав місця для пост-обробки show_as; числово ідентично, RLS збережено.
+
+**Тести:** новий `tests/test_show_as.py` (3 кейси на UA=3/PL=2/DE=1): percent_of_total (UA=0.5, сума=1.0), running_total (макс=6, монотонний), rank (UA=1/PL=2/DE=3). **Усього 45/45 тести зелені**, без регресій.
+
+**Відкладено:** `percent_of_dimension` (знаменник за партицією виміру); нативний GROUPING SETS-батч після звірки сигнатури 19.0.
