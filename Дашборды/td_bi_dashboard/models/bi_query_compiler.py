@@ -770,6 +770,7 @@ class TdBiQueryCompiler(models.AbstractModel):
         ctes = []          # SQL-визначення кожного CTE-джерела
         join_chain = []    # SQL JOIN-клаузи (для 2-го і далі джерела)
         col_owner = {}     # псевдонім поля -> SQL.identifier CTE, що його експонує
+        field_map = {}     # псевдонім поля-міри -> запис td.bi.dataset.field (для DSL-операндів)
         first_cte = None
         for idx, join in enumerate(dataset.join_ids):
             # AC-38: лише left/inner; right/full/cross недоступні (етап 3, ОВ-6).
@@ -808,6 +809,7 @@ class TdBiQueryCompiler(models.AbstractModel):
                 select_parts.append(SQL(
                     "%s AS %s", self._blend_inner_agg_sql(f.aggregator, f.path), SQL.identifier(f.name)))
                 col_owner[f.name] = cte_name
+                field_map[f.name] = f  # для DSL-операндів (агрегатор поля визначає re-агрегацію)
 
             # AC-39: RLS у WHERE кожного CTE (Model._search -> Query.subselect; без sudo).
             rls = self._inject_record_rules(
@@ -857,6 +859,7 @@ class TdBiQueryCompiler(models.AbstractModel):
         # приймає пробілів (а назви мір на кшталт «Кількість контактів» їх містять). Після
         # вибірки повертаємо ключі до справжніх (groupby-токен / назва міри) через out_map.
         proj_parts, group_cols, measure_meta, out_map = [], [], [], {}
+        dsl_plans = []  # [{name, plan, op_aliases}] — DSL-міри: операнди в SQL, арифметика у Python
         for i, gb in enumerate(groupby):
             owner = col_owner.get(gb)
             if not owner:
@@ -868,8 +871,28 @@ class TdBiQueryCompiler(models.AbstractModel):
             out_map[safe] = gb
         for i, m in enumerate(measures):
             if m.expression:
-                raise UserError(_(
-                    "DSL-міри у бленді будуть доступні згодом; міра «%s».", m.name))
+                # DSL-міра у бленді: декомпозуємо формулу на агрегат-операнди -> кожен стає
+                # ПРЕД-АГРЕГОВАНИМ стовпцем (re-агрегація часткових за агрегатором поля-операнда),
+                # а арифметику формули рахуємо у Python пострядково (NULLIF /0 -> None). Так
+                # семантика ре-агрегації коректна (SUM часткових сум/лічильників). // AC-08/AC-11
+                operands, plan = self._blend_decompose_formula(m.expression)
+                op_aliases = []
+                for k, (agg, fname) in enumerate(operands):
+                    field = field_map.get(fname)
+                    owner = col_owner.get(fname)
+                    if not field or not owner:
+                        raise UserError(_(
+                            "DSL-міра «%s»: операнд [%s] має бути полем-мірою джерела бленда.",
+                            m.name, fname))
+                    outer = self._blend_outer_agg(field.aggregator or 'sum')
+                    safe = 'dop_%d_%d' % (i, k)
+                    proj_parts.append(SQL("%s(%s.%s) AS %s", SQL(outer), owner,
+                                          SQL.identifier(fname), SQL.identifier(safe)))
+                    out_map[safe] = safe  # тимчасовий ключ (приберемо після обчислення)
+                    op_aliases.append(safe)
+                dsl_plans.append({'name': m.name, 'plan': plan, 'op_aliases': op_aliases})
+                measure_meta.append({'name': m.name})
+                continue
             field = m.field_id
             if not field or not field.name:
                 raise UserError(_("Міра бленда «%s» без поля.", m.name))
@@ -904,6 +927,13 @@ class TdBiQueryCompiler(models.AbstractModel):
         rows = []
         for r in raw:
             row = {out_map.get(k, k): v for k, v in r.items()}
+            # DSL-міри: арифметика формули над пред-агрегованими операндами у Python,
+            # потім прибираємо тимчасові операнд-стовпці.
+            for dsl in dsl_plans:
+                opvals = [row.get(a) for a in dsl['op_aliases']]
+                row[dsl['name']] = self._blend_eval_plan(dsl['plan'], opvals)
+                for a in dsl['op_aliases']:
+                    row.pop(a, None)
             # Drill-парність: __extra_domain зі значень groupby (псевдоніми; drill — наближено).
             row['__extra_domain'] = self._synthesize_extra_domain(row, groupby)
             rows.append(row)
@@ -950,6 +980,104 @@ class TdBiQueryCompiler(models.AbstractModel):
         except Exception:  # pragma: no cover — звірити сигнатуру на збірці 19.0
             sub = SQL("SELECT id FROM (%s) __rls", rls.select())
         return SQL("%s.%s IN %s", src_alias, SQL.identifier('id'), sub)
+
+    # Дозволені арифметичні бінарні оператори у Python-eval DSL-бленда.
+    _BLEND_BINOPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod)
+
+    @api.model
+    def _blend_decompose_formula(self, expression):
+        """Розкладає DSL-формулу бленда на агрегат-операнди + план для Python-обчислення.
+        Повертає (operands, plan): operands=[(AGG, field_name)] (обчислюються у SQL як пред-
+        агреговані стовпці); plan — дерево ('op'|'const'|'binop'|'unary'|'call'). Whitelist
+        вузлів — як у DSL-компіляторі (AC-13); сирий eval не використовується."""
+        try:
+            tree = ast.parse((expression or '').strip(), mode='eval').body
+        except (ValueError, SyntaxError) as exc:
+            raise ValidationError(_("Некоректний DSL-вираз бленда: %s", exc))
+        operands = []
+
+        def walk(node):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                fn = node.func.id.upper()
+                if fn in self._AGG_FUNCS:
+                    fname = self._dsl_field_name(node.args[0]) if node.args else None
+                    if not fname:
+                        raise ValidationError(_("Агрегат DSL-бленда без поля-операнда."))
+                    operands.append((fn, fname))
+                    return ('op', len(operands) - 1)
+                if fn in self._SCALAR_FUNCS:
+                    return ('call', fn, [walk(a) for a in node.args])
+                raise ValidationError(_("Недозволена функція «%s» у DSL-бленді.", fn))
+            if isinstance(node, ast.BinOp) and isinstance(node.op, self._BLEND_BINOPS):
+                return ('binop', type(node.op), walk(node.left), walk(node.right))
+            if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
+                return ('unary', type(node.op), walk(node.operand))
+            if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+                return ('const', node.value)
+            raise ValidationError(_("Недозволений вузол у DSL-виразі бленда."))
+
+        return operands, walk(tree)
+
+    @api.model
+    def _dsl_field_name(self, node):
+        """Імʼя поля з DSL-операнда: `[field]` -> ast.List([Name]); також Subscript/Name."""
+        if isinstance(node, ast.List) and len(node.elts) == 1 and isinstance(node.elts[0], ast.Name):
+            return node.elts[0].id
+        if isinstance(node, ast.Subscript):
+            return self._subscript_name(node)
+        if isinstance(node, ast.Name):
+            return node.id
+        return None
+
+    @api.model
+    def _blend_eval_plan(self, plan, opvals):
+        """Обчислює план DSL-бленда над значеннями операндів. None-безпечно; ділення/модуль
+        на нуль -> None (AC-11)."""
+        kind = plan[0]
+        if kind == 'op':
+            return opvals[plan[1]]
+        if kind == 'const':
+            return plan[1]
+        if kind == 'unary':
+            v = self._blend_eval_plan(plan[2], opvals)
+            if v is None:
+                return None
+            return -v if plan[1] is ast.USub else +v
+        if kind == 'binop':
+            left = self._blend_eval_plan(plan[2], opvals)
+            right = self._blend_eval_plan(plan[3], opvals)
+            if left is None or right is None:
+                return None
+            op = plan[1]
+            if op is ast.Add:
+                return left + right
+            if op is ast.Sub:
+                return left - right
+            if op is ast.Mult:
+                return left * right
+            if op is ast.Div:
+                return (left / right) if right else None
+            if op is ast.Mod:
+                return (left % right) if right else None
+            return None
+        if kind == 'call':
+            fn = plan[1]
+            args = [self._blend_eval_plan(a, opvals) for a in plan[2]]
+            if fn == 'NULLIF':
+                return None if (len(args) >= 2 and args[0] == args[1]) else (args[0] if args else None)
+            if fn == 'COALESCE':
+                return next((a for a in args if a is not None), None)
+            if fn == 'ABS':
+                return abs(args[0]) if args and args[0] is not None else None
+            if fn == 'ROUND':
+                if not args or args[0] is None:
+                    return None
+                ndig = int(args[1]) if len(args) > 1 and args[1] is not None else 0
+                return round(args[0], ndig)
+            if fn in ('GREATEST', 'LEAST'):
+                vals = [a for a in args if a is not None]
+                return (max(vals) if fn == 'GREATEST' else min(vals)) if vals else None
+        return None
 
     # =========================================================================
     # === Роутер run_query (AC-62) ============================================

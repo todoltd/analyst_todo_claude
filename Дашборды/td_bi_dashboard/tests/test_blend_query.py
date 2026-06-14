@@ -118,6 +118,55 @@ class TestBlendQuery(TransactionCase):
         self.assertTrue(all('__extra_domain' in r for r in res['rows']),
                         "Кожен рядок несе __extra_domain (drill-парність).")
 
+    # --- DSL-міра у бленді: арифметика над пред-агрегованими операндами (re-агрегація коректна) ---
+    def test_blend_dsl_measure(self):
+        recs = self.env['res.partner'].create(
+            [{'name': 'DSL co %d' % i, 'is_company': True} for i in range(3)]
+            + [{'name': 'DSL p %d' % i, 'is_company': False} for i in range(2)])
+        ds = self.env['td.bi.dataset'].create({
+            'name': 'Blend DSL ds', 'mode': 'blend', 'visibility': 'global', 'cache_ttl': 0,
+            'domain': repr([('id', 'in', recs.ids)])})
+        f_isc = self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'isc', 'path': 'is_company',
+            'field_type': 'boolean', 'role': 'dimension'})
+        f_idf = self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'idf', 'path': 'id',
+            'field_type': 'integer', 'role': 'measure', 'aggregator': 'count'})
+        self.env['td.bi.dataset.join'].create({
+            'dataset_id': ds.id, 'sequence': 0, 'source_model_id': self.partner_im.id,
+            'included_field_ids': [(6, 0, [f_isc.id, f_idf.id])]})
+        self.env['td.bi.measure'].create({
+            'dataset_id': ds.id, 'name': 'cnt', 'field_id': f_idf.id, 'aggregator': 'count'})
+        self.env['td.bi.measure'].create({
+            'dataset_id': ds.id, 'name': 'ratio', 'expression': 'COUNT([idf]) * 100'})
+        res = ds.run_query({'groupby': ['isc'], 'measures': ['cnt', 'ratio']})
+        by = {r.get('isc'): r for r in res['rows']}
+        self.assertEqual(by[True].get('cnt'), 3)
+        self.assertEqual(by[False].get('cnt'), 2)
+        for r in res['rows']:
+            self.assertEqual(r.get('ratio'), (r.get('cnt') or 0) * 100,
+                             "DSL над блендом: COUNT([idf])*100 == cnt*100 (re-агрегація часткових).")
+
+    # --- DSL-ratio з NULLIF: ділення на нуль -> None (AC-11) ---
+    def test_blend_dsl_div_zero(self):
+        recs = self.env['res.partner'].create([{'name': 'DZ %d' % i} for i in range(2)])
+        ds = self.env['td.bi.dataset'].create({
+            'name': 'Blend DSL0 ds', 'mode': 'blend', 'visibility': 'global', 'cache_ttl': 0,
+            'domain': repr([('id', 'in', recs.ids)])})
+        f_idf = self.env['td.bi.dataset.field'].create({
+            'dataset_id': ds.id, 'name': 'idf', 'path': 'id',
+            'field_type': 'integer', 'role': 'measure', 'aggregator': 'count'})
+        # zero-міра: count поля active=False серед цих (усі active=True) -> 0 через фільтр? Простіше:
+        # ділимо на (COUNT - COUNT) = 0 -> NULLIF -> None.
+        self.env['td.bi.dataset.join'].create({
+            'dataset_id': ds.id, 'sequence': 0, 'source_model_id': self.partner_im.id,
+            'included_field_ids': [(6, 0, [f_idf.id])]})
+        self.env['td.bi.measure'].create({
+            'dataset_id': ds.id, 'name': 'divz',
+            'expression': 'COUNT([idf]) / NULLIF(COUNT([idf]) - COUNT([idf]), 0)'})
+        res = ds.run_query({'groupby': [], 'measures': ['divz']})
+        self.assertIsNone(res['rows'][0].get('divz'), "Ділення на нуль через NULLIF -> None (AC-11).")
+
     # --- AC-41: предагрегація не множить рядки (унікальний ключ країни) ---
     def test_blend_pre_aggregation_no_explosion(self):
         # Кількість груп <= кількості країн + 1 (NULL) — без декартового множення.
