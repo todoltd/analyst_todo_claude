@@ -49,7 +49,7 @@ SPEC, ARCHITECTURE, модуль):
 | Межа | Вхід (`погоджено`) | Машинна проекція | Чим |
 |---|---|---|---|
 | УЗ → план | аналіз УЗ | план дискавері | kickoff-transcript-analyzer → discovery-plan-builder |
-| цикл → ТР | журнал (теми / рішення) | ТР (US / AC з `origin`) | *пробіл — майбутній конвертер «журнал→ТР»* |
+| цикл → ТР | журнал (теми / рішення) | ТР (US / AC з `origin`) | ✅ `journal-to-tr-builder` (closeout) — скаффолд `ТР_*.md` + секція 1 з `origin`; далі `tr-usecases-acceptance` |
 | ТР → білд | ТР `погоджено` | SPEC.md (AC-01) | spec-writer |
 | SPEC → код | SPEC `approved` | ARCHITECTURE → скелет → код | architecture / scaffolding / code-dev |
 | код → merge | pr-review APPROVE + тести | — | pr-review → реєстр «виконано» |
